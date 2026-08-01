@@ -1,5 +1,5 @@
 {
-  "name": "js-app MCP Bridge",
+  "name": "text-to-design MCP Bridge",
   "id": "1000000000000000001",
   "api": "1.0.0",
   "main": "packages/ui/dist/code.js",

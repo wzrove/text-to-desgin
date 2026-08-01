@@ -1,10 +1,10 @@
 {
-  "name": "jsdesign-mcp-bridge",
+  "name": "text-to-design-mcp",
   "version": "0.1.0",
   "description": "MCP server bridging AI clients to the jsDesign (即时设计) desktop plugin via a local WebSocket",
   "type": "module",
   "bin": {
-    "jsdesign-mcp-bridge": "dist/index.js"
+    "text-to-design-mcp": "dist/index.js"
   },
   "files": [
     "dist",

@@ -1,5 +1,5 @@
 {
-  "name": "@jsdesign/shared",
+  "name": "text-to-design-shared",
   "private": true,
   "version": "0.0.0",
   "type": "module",

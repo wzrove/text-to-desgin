@@ -1,4 +1,10 @@
-export { executeOps, createSvgNode } from './execute'
-export { updateSelection } from './update'
-export { findNodes, setSelection, removeNodes, cloneNodes, groupNodes } from './nodes'
-export { exportNodes, fillImageNode, listFonts } from './export'
+export { createSvgNode, executeOps } from './execute';
+export { exportNodes, fillImageNode, listFonts } from './export';
+export {
+  cloneNodes,
+  findNodes,
+  groupNodes,
+  removeNodes,
+  setSelection,
+} from './nodes';
+export { updateSelection } from './update';

@@ -1,18 +1,30 @@
 {
-  "name": "js-app",
+  "name": "text-to-design",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter jsdesign-ui watch",
-    "dev:ui": "pnpm --filter jsdesign-ui dev",
-    "build": "pnpm --filter jsdesign-ui build",
+    "postinstall": "lefthook install",
+    "dev": "pnpm --filter text-to-design-ui watch",
+    "dev:ui": "pnpm --filter text-to-design-ui dev",
+    "build": "pnpm --filter text-to-design-ui build",
     "typecheck": "pnpm -r run typecheck",
-    "mcp": "pnpm --filter jsdesign-mcp-bridge start:dev"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "mcp": "pnpm --filter text-to-design-mcp start:dev"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@types/node": "^24.13.3",
     "concurrently": "10.0.4",
+    "lefthook": "^2.1.10",
     "typescript": "^7.0.2"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   }
 }

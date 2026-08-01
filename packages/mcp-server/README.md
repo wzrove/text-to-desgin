@@ -1,4 +1,4 @@
-# jsdesign-mcp-bridge
+# text-to-design-mcp
 
 MCP(MCP Model Context Protocol)server:把 AI 客户端桥接到 jsDesign(即时设计)桌面插件。
 
@@ -37,7 +37,7 @@ opencode 会话B ──stdio──▶ shim B ──┘ HTTP ──────�
 ```json
 {
   "mcp": {
-    "jsdesign": {
+    "text-to-design": {
       "type": "local",
       "command": ["pnpm", "run", "mcp"],
       "enabled": true
@@ -50,9 +50,9 @@ opencode 会话B ──stdio──▶ shim B ──┘ HTTP ──────�
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `JSDESIGN_MCP_PORT` | `47812` | 插件桥接 WebSocket 端口(固定,被占即启动失败) |
-| `JSDESIGN_MCP_HTTP_PORT` | `47820` | MCP streamable HTTP 端点端口(shim 连接 daemon 用) |
-| `JSDESIGN_MCP_LOG` | `/tmp/jsdesign-mcp.log` | daemon 日志文件路径(detached 启动 stderr 不可见,消息收发/超时/未匹配全部落盘;`tail -f` 观察) |
+| `TEXT_TO_DESIGN_MCP_PORT` | `47812` | 插件桥接 WebSocket 端口(固定,被占即启动失败) |
+| `TEXT_TO_DESIGN_MCP_HTTP_PORT` | `47820` | MCP streamable HTTP 端点端口(shim 连接 daemon 用) |
+| `TEXT_TO_DESIGN_MCP_LOG` | `/tmp/text-to-design-mcp.log` | daemon 日志文件路径(detached 启动 stderr 不可见,消息收发/超时/未匹配全部落盘;`tail -f` 观察) |
 
 ## daemon 生命周期
 
@@ -64,19 +64,19 @@ opencode 会话B ──stdio──▶ shim B ──┘ HTTP ──────�
 
 | 工具 | 说明 |
 | --- | --- |
-| `jsdesign_ping` | 检查 jsDesign 插件是否在线 |
-| `jsdesign_get_selection` | 获取画布当前选中节点信息 |
-| `jsdesign_execute` | 在画布执行声明式设计指令(op 节点树,支持 frame/rect/ellipse/line/polygon/star/vector/text,阴影/描边/渐变/文本样式) |
-| `jsdesign_html_to_design` | 将 HTML 转换为设计节点(SVG 保真路线) |
-| `jsdesign_update_selection` | 修改选中节点属性(含原生阴影/描边/文本样式/细分圆角) |
-| `jsdesign_find` | 按名称/类型查找节点 |
-| `jsdesign_set_selection` | 设置画布选中节点 |
-| `jsdesign_remove` | 删除节点(按 ids/名称/选中) |
-| `jsdesign_clone` | 复制节点 |
-| `jsdesign_group` | 编组/取消编组 |
-| `jsdesign_export` | 导出节点为 PNG/JPG/SVG/PDF(二进制通道;可 savePath 落盘或 includeDataUrl 生成 base64) |
-| `jsdesign_list_fonts` | 列出可用字体族 |
-| `jsdesign_fill_image` | 将本地图片文件字节填充到节点(IMAGE fill) |
+| `text_to_design_ping` | 检查 jsDesign 插件是否在线 |
+| `text_to_design_get_selection` | 获取画布当前选中节点信息 |
+| `text_to_design_execute` | 在画布执行声明式设计指令(op 节点树,支持 frame/rect/ellipse/line/polygon/star/vector/text,阴影/描边/渐变/文本样式) |
+| `text_to_design_html_to_design` | 将 HTML 转换为设计节点(SVG 保真路线) |
+| `text_to_design_update_selection` | 修改选中节点属性(含原生阴影/描边/文本样式/细分圆角) |
+| `text_to_design_find` | 按名称/类型查找节点 |
+| `text_to_design_set_selection` | 设置画布选中节点 |
+| `text_to_design_remove` | 删除节点(按 ids/名称/选中) |
+| `text_to_design_clone` | 复制节点 |
+| `text_to_design_group` | 编组/取消编组 |
+| `text_to_design_export` | 导出节点为 PNG/JPG/SVG/PDF(二进制通道;可 savePath 落盘或 includeDataUrl 生成 base64) |
+| `text_to_design_list_fonts` | 列出可用字体族 |
+| `text_to_design_fill_image` | 将本地图片文件字节填充到节点(IMAGE fill) |
 
 ## 开发
 
@@ -84,5 +84,5 @@ opencode 会话B ──stdio──▶ shim B ──┘ HTTP ──────�
 pnpm install
 pnpm dev      # watch 构建 ui/code(ui 包内并行)
 pnpm mcp      # 直接启动 mcp-server(shim 角色;加 daemon 参数则以 daemon 角色运行)
-pnpm --filter jsdesign-mcp-bridge start   # 或直接进 packages/mcp-server 跑 start
+pnpm --filter text-to-design-mcp start   # 或直接进 packages/mcp-server 跑 start
 ```
