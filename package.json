@@ -13,6 +13,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "release": "pnpm build && node scripts/publish.mjs",
+    "chset": "node scripts/new-changeset.mjs",
     "mcp": "pnpm --filter text-to-design-mcp start:dev"
   },
   "devDependencies": {
