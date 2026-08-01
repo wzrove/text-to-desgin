@@ -7,7 +7,7 @@
     "postinstall": "lefthook install",
     "dev": "pnpm --filter text-to-design-ui watch",
     "dev:ui": "pnpm --filter text-to-design-ui dev",
-    "build": "pnpm --filter text-to-design-ui build",
+    "build": "pnpm --filter text-to-design-ui build && pnpm --filter text-to-design-mcp build",
     "typecheck": "pnpm -r run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
