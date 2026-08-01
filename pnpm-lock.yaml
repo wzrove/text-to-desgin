@@ -83,16 +83,6 @@ importers:
         version: 7.0.2
 
   packages/ui:
-    dependencies:
-      daisyui:
-        specifier: ^4.12.24
-        version: 4.12.24(postcss@8.5.25)
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-      tailwindcss:
-        specifier: ^3.4.17
-        version: 3.4.19(tsx@4.23.1)
     devDependencies:
       '@jsdesigndeveloper/plugin-typings':
         specifier: ^1.0.12
@@ -106,9 +96,18 @@ importers:
       concurrently:
         specifier: 10.0.4
         version: 10.0.4
+      daisyui:
+        specifier: ^4.12.24
+        version: 4.12.24(postcss@8.5.25)
       postcss:
         specifier: ^8.5.3
         version: 8.5.25
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(tsx@4.23.1)
       text-to-design-shared:
         specifier: workspace:*
         version: link:../shared

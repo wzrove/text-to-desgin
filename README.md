@@ -1,5 +1,7 @@
 # text-to-design — jsDesign MCP Bridge
 
+<p align="center"><img src="logo.svg" width="120" alt="text-to-design logo" /></p>
+
 让 AI 助手(opencode、Claude 等)通过 MCP 直接操作即时设计(jsDesign)画布:选中 / 创建 / 编辑 / 导出 / 填充图片。
 
 ## 快速安装
