@@ -10,6 +10,13 @@ export class Router {
   private conn: Conn;
   private log: (line: string) => void;
 
+  /** 插件主动推送的选中状态(selectionchange) */
+  onSelection: ((data: unknown) => void) | null = null;
+
+  /** daemon 主动下发的连接状态确认 */
+  onServerStatus: ((msg: { state: string; version?: string }) => void) | null =
+    null;
+
   constructor(conn: Conn, log: (line: string) => void) {
     this.conn = conn;
     this.log = log;
@@ -20,11 +27,42 @@ export class Router {
     return this.sendToCode({ type: 'request', id, method: 'ping', params: {} });
   }
 
+  /** 向 daemon 发 ping 探测(daemon 自动回 pong),用于确认连接双向可达 */
+  probeServer(): void {
+    const ws = this.conn.ws;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: 'request',
+          id: `ui-probe-${Date.now()}-${this.globalSeq++}`,
+          method: 'ping',
+          params: {},
+        }),
+      );
+    }
+  }
+
   onWsText(conn: Conn, text: string): void {
-    let msg: PluginRequest | PluginResponse;
+    let msg:
+      | PluginRequest
+      | PluginResponse
+      | { type: 'status'; state: string; version?: string };
     try {
       msg = JSON.parse(text);
     } catch {
+      return;
+    }
+    if (msg.type === 'status') {
+      this.onServerStatus?.(msg);
+      return;
+    }
+    if (
+      msg.type === 'response' &&
+      msg.ok &&
+      (msg.data as { pong?: boolean } | undefined)?.pong
+    ) {
+      // daemon 对 ping 探测的自动回包,视为连接确认
+      this.onServerStatus?.({ state: 'connected' });
       return;
     }
     if (msg.type === 'request') {
@@ -118,8 +156,14 @@ export class Router {
       const pm = event.data?.pluginMessage as
         | PluginRequest
         | PluginResponse
+        | { type: 'selection'; data: unknown }
         | undefined;
-      if (!pm?.id) return;
+      if (!pm) return;
+      if (pm.type === 'selection') {
+        this.onSelection?.(pm.data);
+        return;
+      }
+      if (!pm.id) return;
       if (pm.type !== 'response') {
         // 插件只回响应,不主动发请求;意外请求忽略并记日志
         this.log(`忽略未知插件消息: ${(pm as { type?: string }).type}`);

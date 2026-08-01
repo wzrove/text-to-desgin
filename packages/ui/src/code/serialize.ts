@@ -103,6 +103,29 @@ export function serializeNode(
       node as PolygonNode
     ).pointCount;
   }
+  if (node.type === 'VECTOR') {
+    const v = node as VectorNode;
+    base.vectorPaths = v.vectorPaths.map((p) => ({
+      data: p.data,
+      windingRule: p.windingRule,
+    }));
+  }
+  if ('variantProperties' in node && node.variantProperties != null) {
+    base.variantProperties = { ...(node as InstanceNode).variantProperties };
+  }
+  if (node.type === 'INSTANCE') {
+    const inst = node as InstanceNode;
+    base.mainComponentId = inst.mainComponent?.id;
+  }
+  if (node.type === 'COMPONENT_SET') {
+    const set = node as ComponentSetNode;
+    base.variantGroupProperties = Object.fromEntries(
+      Object.entries(set.variantGroupProperties).map(([k, v]) => [
+        k,
+        [...v.values],
+      ]),
+    );
+  }
   if (node.type === 'TEXT') {
     base.characters = node.characters;
     if (!isMixed(node.fontSize)) base.fontSize = node.fontSize;

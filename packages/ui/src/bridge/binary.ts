@@ -1,10 +1,12 @@
-/** 从响应 data 中提取所有 Uint8Array 字节(支持 {exports:[{bytes}]} 或 {bytes}) */
+/** 从响应 data 中提取所有 Uint8Array 字节(支持 {exports:[{bytes}]}、{exports:{id:{bytes}}} 或 {bytes}) */
 export function extractBytes(data: unknown): Uint8Array[] {
   if (!data || typeof data !== 'object') return [];
   const d = data as Record<string, unknown>;
-  if (Array.isArray(d.exports)) {
+  if (d.exports && typeof d.exports === 'object') {
+    const exports_ = d.exports as Record<string, unknown>;
+    const items = Array.isArray(exports_) ? exports_ : Object.values(exports_);
     const list: Uint8Array[] = [];
-    for (const e of d.exports) {
+    for (const e of items) {
       const b = (e as Record<string, unknown>)?.bytes;
       if (b instanceof Uint8Array) list.push(b);
     }
@@ -18,14 +20,20 @@ export function extractBytes(data: unknown): Uint8Array[] {
 export function stripBytes(data: unknown): unknown {
   if (!data || typeof data !== 'object') return data;
   const d = data as Record<string, unknown>;
-  if (Array.isArray(d.exports)) {
-    return {
-      ...d,
-      exports: d.exports.map((e) => {
-        const { bytes: _b, ...rest } = e as Record<string, unknown>;
-        return rest;
-      }),
-    };
+  if (d.exports && typeof d.exports === 'object') {
+    const exports_ = d.exports as Record<string, unknown>;
+    const stripped = Array.isArray(exports_)
+      ? exports_.map((e) => {
+          const { bytes: _b, ...rest } = e as Record<string, unknown>;
+          return rest;
+        })
+      : Object.fromEntries(
+          Object.entries(exports_).map(([k, e]) => {
+            const { bytes: _b, ...rest } = e as Record<string, unknown>;
+            return [k, rest];
+          }),
+        );
+    return { ...d, exports: stripped };
   }
   const { bytes: _b, ...rest } = d;
   return rest;

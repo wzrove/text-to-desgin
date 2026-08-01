@@ -31,6 +31,32 @@ async function buildNode(
     case 'vector':
       node = jsDesign.createVector();
       break;
+    case 'boolean': {
+      const children = spec.children ?? [];
+      if (children.length < 2) {
+        throw new Error('boolean op 至少需要 2 个子节点');
+      }
+      const tmp = jsDesign.createFrame();
+      parent.appendChild(tmp);
+      for (const child of children) {
+        await buildNode(child, tmp);
+      }
+      const combine: Record<
+        string,
+        (
+          nodes: ReadonlyArray<BaseNode>,
+          parent: BaseNode & ChildrenMixin,
+        ) => BooleanOperationNode
+      > = {
+        UNION: jsDesign.union,
+        SUBTRACT: jsDesign.subtract,
+        INTERSECT: jsDesign.intersect,
+        EXCLUDE: jsDesign.exclude,
+      };
+      node = combine[spec.booleanType ?? 'UNION']([...tmp.children], parent);
+      tmp.remove();
+      break;
+    }
     default:
       node = jsDesign.createFrame();
   }
@@ -112,6 +138,17 @@ async function buildNode(
   }
 
   parent.appendChild(node);
+  if (spec.op === 'boolean') {
+    return node;
+  }
+  if (node.type === 'VECTOR' && spec.paths != null) {
+    const list = Array.isArray(spec.paths) ? spec.paths : [spec.paths];
+    (node as VectorNode).vectorPaths = list.map((p) =>
+      typeof p === 'string'
+        ? { windingRule: 'NONZERO', data: p }
+        : { windingRule: p.windingRule ?? 'NONZERO', data: p.data },
+    );
+  }
   for (const child of spec.children ?? []) {
     await buildNode(child, node as unknown as BaseNode & ChildrenMixin);
   }

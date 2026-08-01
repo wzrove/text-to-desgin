@@ -94,3 +94,54 @@ export function groupNodes(params: {
   if (params.name != null) group.name = params.name;
   return { created: serializeNode(group) };
 }
+
+export function flattenNodes(ids: string[]): Record<string, unknown> {
+  const nodes = findNode(ids);
+  if (nodes.length < 2) {
+    throw new Error('flatten 至少需要 2 个节点');
+  }
+  const vector = jsDesign.flatten(nodes, jsDesign.currentPage);
+  jsDesign.viewport.scrollAndZoomIntoView([vector]);
+  return { created: serializeNode(vector) };
+}
+
+export function outlineStrokeNodes(ids: string[]): Record<string, unknown> {
+  const nodes = findNode(ids);
+  if (nodes.length === 0) {
+    throw new Error('没有找到要转描边的节点');
+  }
+  const created: SceneNode[] = [];
+  for (const n of nodes) {
+    const v = (n as { outlineStroke(): VectorNode | null }).outlineStroke();
+    if (v) created.push(v);
+  }
+  if (created.length === 0) {
+    throw new Error('所选节点没有可转换的描边');
+  }
+  jsDesign.viewport.scrollAndZoomIntoView(created);
+  return { created: created.map((n) => serializeNode(n)) };
+}
+
+export function reparentNodes(params: {
+  ids: string[];
+  parentId?: string;
+  index?: number;
+}): Record<string, unknown> {
+  const nodes = findNode(params.ids);
+  if (nodes.length === 0) {
+    throw new Error('没有找到要移动的节点');
+  }
+  const parent =
+    params.parentId != null
+      ? findNode([params.parentId])[0]
+      : jsDesign.currentPage.selection[0];
+  if (!parent) {
+    throw new Error('没有找到目标父节点');
+  }
+  const container = parent as BaseNode & ChildrenMixin;
+  for (const n of nodes) {
+    if (params.index != null) container.insertChild(params.index, n);
+    else container.appendChild(n);
+  }
+  return { moved: nodes.map((n) => serializeNode(n)) };
+}

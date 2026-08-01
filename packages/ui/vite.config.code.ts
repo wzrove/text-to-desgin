@@ -1,15 +1,17 @@
 import { resolve } from 'node:path';
 import { defineConfig, type UserConfig } from 'vite';
+import manifestPlugin from './scripts/vite-plugin-manifest.js';
 
 export default defineConfig(
   (): UserConfig => ({
+    plugins: [manifestPlugin()],
     define: {
       global: '{}',
     },
     build: {
       outDir: 'dist',
       emptyOutDir: false,
-      sourcemap: 'inline',
+      sourcemap: false,
       target: 'es6',
       minify: false,
       rolldownOptions: {

@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"vite\" \"vite build --config vite.config.code.ts --watch\"",
-    "build": "vite build && vite build --config vite.config.code.ts && node scripts/package-dist.mjs",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && vite build && vite build --config vite.config.code.ts",
     "watch": "concurrently \"vite build --watch\" \"vite build --config vite.config.code.ts --watch\"",
     "typecheck": "tsc --noEmit"
   },
@@ -30,6 +30,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
     "vite-plugin-singlefile": "^2.3.3",
-    "vite-plugin-solid": "^2.11.13"
+    "vite-plugin-solid": "^2.11.14"
   }
 }

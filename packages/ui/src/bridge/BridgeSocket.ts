@@ -16,10 +16,21 @@ export class BridgeSocket {
   private scanner: Scanner;
 
   constructor(port = WS_PORT) {
-    this.conn = { port, ws: null, status: 'disconnected', binaryIn: null };
+    this.conn = { port, ws: null, binaryIn: null };
     this.router = new Router(this.conn, (line) =>
       this.events.emit({ type: 'log', line }),
     );
+    this.router.onSelection = (data) =>
+      this.events.emit({ type: 'selection', data });
+    this.router.onServerStatus = (msg) => {
+      this.connection.markConfirmed();
+      if (msg.version) {
+        this.events.emit({
+          type: 'log',
+          line: `服务已确认连接(版本 ${msg.version})`,
+        });
+      }
+    };
     this.connection = new ConnectionManager(
       this.conn,
       this.router,
@@ -39,6 +50,10 @@ export class BridgeSocket {
 
   get currentStatus(): BridgeStatus {
     return this.connection.status;
+  }
+
+  get lastConfirmedAt(): number {
+    return this.connection.lastConfirmedAt;
   }
 
   subscribe(cb: (e: BridgeEvent) => void): () => void {
@@ -63,5 +78,9 @@ export class BridgeSocket {
 
   pingPlugin(): Promise<unknown> {
     return this.router.pingPlugin();
+  }
+
+  probeServer(): void {
+    this.router.probeServer();
   }
 }

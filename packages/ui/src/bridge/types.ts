@@ -8,12 +8,12 @@ export type BridgeStatus =
 
 export type BridgeEvent =
   | { type: 'status'; status: BridgeStatus }
-  | { type: 'log'; line: string };
+  | { type: 'log'; line: string }
+  | { type: 'selection'; data: unknown };
 
 export type Conn = {
   port: number;
   ws: WebSocket | null;
-  status: BridgeStatus;
   binaryIn: {
     msg: PluginRequest;
     buffers: Uint8Array[];
@@ -30,3 +30,5 @@ export type Pending = {
 /** UI 侧超时必须小于服务器侧(30s),保证 UI 先超时先回错误包,不留孤儿 */
 export const TIMEOUT = 25000;
 export const SCAN_INTERVAL = 1000;
+/** 重连退避封顶 */
+export const MAX_SCAN_INTERVAL = 10000;

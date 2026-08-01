@@ -17,6 +17,10 @@ export interface SpecGradient {
   angle?: number;
 }
 
+export type SpecVectorPath =
+  | string
+  | { data: string; windingRule?: 'NONZERO' | 'EVENODD' | 'NONE' };
+
 export interface Spec {
   op?:
     | 'frame'
@@ -26,6 +30,7 @@ export interface Spec {
     | 'polygon'
     | 'star'
     | 'vector'
+    | 'boolean'
     | 'text';
   name?: string;
   x?: number;
@@ -46,6 +51,10 @@ export interface Spec {
   gradient?: SpecGradient;
   pointCount?: number;
   innerRadius?: number;
+  /** boolean 专用:合并方式,默认 UNION */
+  booleanType?: 'UNION' | 'SUBTRACT' | 'INTERSECT' | 'EXCLUDE';
+  /** vector 专用:SVG path data(单个或数组),如 "M0 0 L100 0 L100 100 Z" */
+  paths?: SpecVectorPath | SpecVectorPath[];
   fontSize?: number;
   fontWeight?: number;
   fontFamily?: string;
@@ -65,6 +74,7 @@ const OPS = [
   'polygon',
   'star',
   'vector',
+  'boolean',
   'text',
 ];
 
@@ -77,7 +87,7 @@ function toSpec(raw: unknown): Spec {
   const spec = raw as Spec;
   if (spec.op !== undefined && OPS.indexOf(spec.op) === -1) {
     throw new Error(
-      `无效的 op: "${spec.op}"(支持 frame|rect|ellipse|line|polygon|star|vector|text)`,
+      `无效的 op: "${spec.op}"(支持 frame|rect|ellipse|line|polygon|star|vector|boolean|text)`,
     );
   }
   return spec;

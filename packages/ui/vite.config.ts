@@ -31,9 +31,9 @@ export default defineConfig({
   plugins: [solid(), viteSingleFile(), reorderCss()],
   build: {
     outDir: 'dist',
-    emptyOutDir: true,
+    emptyOutDir: false,
     target: 'es6',
-    sourcemap: 'inline',
+    sourcemap: false,
     assetsInlineLimit: 100000000,
     rolldownOptions: {
       input: resolve(import.meta.dirname, 'ui.html'),

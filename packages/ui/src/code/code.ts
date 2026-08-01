@@ -2,15 +2,25 @@ import type { GetSelectionParams, PluginRequest } from 'text-to-design-shared';
 import { makeResponse } from 'text-to-design-shared';
 import {
   cloneNodes,
+  combineAsVariantsNodes,
+  createComponentNodes,
+  createInstances,
   createSvgNode,
+  detachInstanceNodes,
   executeOps,
   exportNodes,
   fillImageNode,
   findNodes,
+  flattenNodes,
   groupNodes,
+  importComponentNodes,
   listFonts,
+  outlineStrokeNodes,
   removeNodes,
+  reparentNodes,
+  setInstanceProperties,
   setSelection,
+  swapComponents,
   updateSelection,
 } from './build';
 import { serializeNode } from './serialize';
@@ -52,6 +62,20 @@ function getSelection(
     pageName: jsDesign.currentPage.name,
   };
 }
+
+function pushSelection(): void {
+  try {
+    jsDesign.ui.postMessage({
+      type: 'selection',
+      data: getSelection({ depth: 1 }),
+    });
+  } catch (e) {
+    console.error('[code] 推送选中失败', e);
+  }
+}
+
+jsDesign.on('selectionchange', pushSelection);
+setTimeout(pushSelection, 300);
 
 jsDesign.ui.onmessage = async (msg: PluginRequest) => {
   const id = msg.id;
@@ -101,6 +125,56 @@ jsDesign.ui.onmessage = async (msg: PluginRequest) => {
       }
       case 'group': {
         const r = groupNodes(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'flatten': {
+        const r = flattenNodes(msg.params.ids);
+        send(id, true, r);
+        break;
+      }
+      case 'outline_stroke': {
+        const r = outlineStrokeNodes(msg.params.ids);
+        send(id, true, r);
+        break;
+      }
+      case 'reparent': {
+        const r = reparentNodes(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'create_component': {
+        const r = createComponentNodes(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'create_instance': {
+        const r = createInstances(msg.params.ids);
+        send(id, true, r);
+        break;
+      }
+      case 'swap_component': {
+        const r = swapComponents(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'set_instance_properties': {
+        const r = setInstanceProperties(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'import_component': {
+        const r = await importComponentNodes(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'combine_as_variants': {
+        const r = combineAsVariantsNodes(msg.params);
+        send(id, true, r);
+        break;
+      }
+      case 'detach_instance': {
+        const r = detachInstanceNodes(msg.params.ids);
         send(id, true, r);
         break;
       }

@@ -19,14 +19,15 @@ import {
 } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { z } from 'zod';
+import { version } from '../package.json' with { type: 'json' };
 import { Bridge } from './bridge';
 import { htmlToSvg } from './htmlToDesign';
+import { log } from './logger';
 
 const PORT = Number(process.env.TEXT_TO_DESIGN_MCP_PORT ?? 47812);
 const HTTP_PORT = Number(process.env.TEXT_TO_DESIGN_MCP_HTTP_PORT ?? 47820);
 const SERVER_NAME = 'text-to-design-mcp-server';
-const SERVER_VERSION = '0.0.1';
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const SERVER_VERSION = version;
 const DAEMON_WAIT_MS = 5000;
 const DAEMON_POLL_MS = 250;
 
@@ -101,7 +102,7 @@ function buildServer(): McpServer {
     'text_to_design_execute',
     {
       description:
-        '在画布执行声明式设计指令。ops 为节点数组,每项: {op:"frame"|"rect"|"ellipse"|"line"|"polygon"|"star"|"vector"|"text", name?, x?, y?, w?, h?, fill?, radius?, rotation?, opacity?, stroke?, strokeWeight?, shadow?:{color,x,y,radius,spread}, gradient?:{stops:[{color,position}],angle}, pointCount?, fontSize?, fontWeight?, fontFamily?, characters?, textAlign?, lineHeight?, letterSpacing?, layout?:{mode,itemSpacing,padding}, radiusTopLeft?..., children?:[...] }。自动插入到画布中心',
+        '在画布执行声明式设计指令。ops 为节点数组,每项: {op:"frame"|"rect"|"ellipse"|"line"|"polygon"|"star"|"vector"|"boolean"|"text", name?, x?, y?, w?, h?, fill?, radius?, rotation?, opacity?, stroke?, strokeWeight?, shadow?:{color,x,y,radius,spread}, gradient?:{stops:[{color,position}],angle}, pointCount?, fontSize?, fontWeight?, fontFamily?, characters?, textAlign?, lineHeight?, letterSpacing?, layout?:{mode,itemSpacing,padding}, radiusTopLeft?..., children?:[...] }。op 为 vector 时可用 paths 传 SVG path data(单个或数组,如 "M0 0 L100 0 L100 100 Z",可含 windingRule);op 为 boolean 时 children 至少 2 个,booleanType 取 UNION|SUBTRACT|INTERSECT|EXCLUDE(默认 UNION)。自动插入到画布中心',
       inputSchema: z.object({
         ops: z.array(z.any()).describe('设计指令节点树'),
       }),
@@ -109,6 +110,33 @@ function buildServer(): McpServer {
     async ({ ops }) => {
       try {
         const data = await bridge.request('execute', { ops });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_create_svg',
+    {
+      description:
+        '将 SVG 字符串直接导入画布(原生 createNodeFromSvg,完整保留 path/矢量/渐变/描边,不经 htmlToSvg 降级)',
+      inputSchema: z.object({
+        svg: z
+          .string()
+          .describe(
+            '完整 SVG 字符串,如 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M0 0 L100 0 L100 100 Z" fill="#ff0000"/></svg>',
+          ),
+        name: z.string().optional().describe('生成的图层名,默认 svg-design'),
+      }),
+    },
+    async ({ svg, name }) => {
+      try {
+        const data = await bridge.request('create_svg', {
+          svg,
+          name: name ?? 'svg-design',
+        });
         return text(data);
       } catch (e) {
         return err(e);
@@ -227,7 +255,9 @@ function buildServer(): McpServer {
     type: z
       .string()
       .optional()
-      .describe('节点类型,如 FRAME/RECTANGLE/TEXT/ELLIPSE/LINE/POLYGON/STAR'),
+      .describe(
+        '节点类型,如 FRAME/RECTANGLE/TEXT/ELLIPSE/LINE/POLYGON/STAR/VECTOR',
+      ),
     recursive: z.boolean().optional().describe('是否递归查找(默认 true)'),
   });
 
@@ -319,6 +349,212 @@ function buildServer(): McpServer {
     async ({ ids, name, ungroup }) => {
       try {
         const data = await bridge.request('group', { ids, name, ungroup });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_flatten',
+    {
+      description: '将多个节点合并为单个矢量(VectorNode),原节点被吸收',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('要合并的节点 id 列表(至少 2 个)'),
+      }),
+    },
+    async ({ ids }) => {
+      try {
+        const data = await bridge.request('flatten', { ids });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_outline_stroke',
+    {
+      description: '将节点描边转为矢量轮廓(outlineStroke),返回新矢量节点',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('要转描边的节点 id 列表'),
+      }),
+    },
+    async ({ ids }) => {
+      try {
+        const data = await bridge.request('outline_stroke', { ids });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_reparent',
+    {
+      description:
+        '移动节点到目标父节点下(原生移动,自动脱离原父)。parentId 缺省时用当前选中第一个节点作父;index 可指定插入顺序',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('要移动的节点 id 列表'),
+        parentId: z
+          .string()
+          .optional()
+          .describe('目标父节点 id,缺省用当前选中第一个节点'),
+        index: z.number().optional().describe('插入位置,缺省追加到末尾'),
+      }),
+    },
+    async ({ ids, parentId, index }) => {
+      try {
+        const data = await bridge.request('reparent', { ids, parentId, index });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_create_component',
+    {
+      description: '将指定节点固化为组件(ComponentNode),原节点移入组件内',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('要固化为组件的节点 id 列表'),
+        name: z.string().optional().describe('组件名,默认 component'),
+      }),
+    },
+    async ({ ids, name }) => {
+      try {
+        const data = await bridge.request('create_component', { ids, name });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_create_instance',
+    {
+      description: '从组件节点创建实例(InstanceNode),放到画布中心',
+      inputSchema: z.object({
+        ids: z
+          .array(z.string())
+          .describe('组件(COMPONENT)节点 id 列表,每个生成一个实例'),
+      }),
+    },
+    async ({ ids }) => {
+      try {
+        const data = await bridge.request('create_instance', { ids });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_swap_component',
+    {
+      description: '交换实例的组件(实例样式整体换成另一个组件)',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+        componentId: z.string().describe('目标组件(COMPONENT)节点 id'),
+      }),
+    },
+    async ({ ids, componentId }) => {
+      try {
+        const data = await bridge.request('swap_component', {
+          ids,
+          componentId,
+        });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_set_instance_properties',
+    {
+      description:
+        '设置实例的变体属性(如 {"状态":"禁用","尺寸":"大"}),可选值见 find/get_selection 返回的 variantGroupProperties',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+        properties: z
+          .record(z.string(), z.string())
+          .describe('变体属性名→值,如 {"状态":"禁用"}'),
+      }),
+    },
+    async ({ ids, properties }) => {
+      try {
+        const data = await bridge.request('set_instance_properties', {
+          ids,
+          properties,
+        });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_import_component',
+    {
+      description:
+        '从团队库按 key 导入组件到当前页面。key 获取方式:jsDesign 编辑器中右键组件 → 复制链接/组件 Key(如 URL 里 componentKey= 或分享链接中的 key 参数)',
+      inputSchema: z.object({
+        key: z.string().describe('组件 Key'),
+        name: z.string().optional().describe('导入后的组件名'),
+      }),
+    },
+    async ({ key, name }) => {
+      try {
+        const data = await bridge.request('import_component', { key, name });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_combine_as_variants',
+    {
+      description:
+        '将多个组件合并为组件集(ComponentSetNode),生成变体后可配合 set_instance_properties 切换',
+      inputSchema: z.object({
+        ids: z
+          .array(z.string())
+          .describe('组件(COMPONENT)节点 id 列表(至少 2 个)'),
+        name: z.string().optional().describe('组件集名'),
+      }),
+    },
+    async ({ ids, name }) => {
+      try {
+        const data = await bridge.request('combine_as_variants', { ids, name });
+        return text(data);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'text_to_design_detach_instance',
+    {
+      description: '解绑实例(INSTANCE → FrameNode),解绑后可自由编辑内容',
+      inputSchema: z.object({
+        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+      }),
+    },
+    async ({ ids }) => {
+      try {
+        const data = await bridge.request('detach_instance', { ids });
         return text(data);
       } catch (e) {
         return err(e);
@@ -441,6 +677,21 @@ function buildServer(): McpServer {
 async function probeUpstream(): Promise<
   { state: 'proxy'; client: Client } | { state: 'foreign' } | { state: 'none' }
 > {
+  const health = await fetchDaemonHealth();
+  if (health && health.version !== SERVER_VERSION) {
+    process.stderr.write(
+      `[text-to-design-mcp] 检测到旧版 daemon (${health.version} → ${SERVER_VERSION}),正在替换...\n`,
+    );
+    await fetch(`http://127.0.0.1:${HTTP_PORT}/shutdown`, {
+      method: 'POST',
+    }).catch(() => {});
+    const deadline = Date.now() + 2000;
+    while (Date.now() < deadline) {
+      await delay(DAEMON_POLL_MS);
+      if ((await fetchDaemonHealth()) === null) break;
+    }
+    return { state: 'none' };
+  }
   const client = new Client(
     { name: 'text-to-design-proxy', version: SERVER_VERSION },
     { versionNegotiation: { mode: 'auto' } },
@@ -463,6 +714,25 @@ async function probeUpstream(): Promise<
   } catch {
     await client.close().catch(() => {});
     return { state: 'none' };
+  }
+}
+
+/** GET daemon /health;无 /health 端点(旧版/外来服务/未启动)或失败 → null */
+async function fetchDaemonHealth(): Promise<{
+  name: string;
+  version: string;
+} | null> {
+  try {
+    const res = await fetch(`http://127.0.0.1:${HTTP_PORT}/health`, {
+      signal: AbortSignal.timeout(800),
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { name?: string; version?: string };
+    return body.name && body.version
+      ? { name: body.name, version: body.version }
+      : null;
+  } catch {
+    return null;
   }
 }
 
@@ -531,7 +801,7 @@ function spawnDaemon(): void {
   });
 }
 
-/** daemon 模式:WS 桥(插件) + HTTP MCP(各会话 shim 连接),无 stdio,空闲自退 */
+/** daemon 模式:WS 桥(插件) + HTTP MCP(各会话 shim 连接),无 stdio,常驻 */
 async function runDaemon(): Promise<void> {
   await bridge.start(PORT);
   process.stderr.write(
@@ -543,12 +813,42 @@ async function runDaemon(): Promise<void> {
   const validateHost = localhostHostValidation();
   const validateOrigin = localhostOriginValidation();
   let httpServer: ReturnType<typeof createServer> | null = null;
-  let lastActivity = Date.now();
+
+  const shutdown = (reason: string): void => {
+    process.stderr.write(`[text-to-design-mcp] daemon 退出: ${reason}\n`);
+    void handler.close();
+    bridge.stop();
+    httpServer?.close();
+    process.exit(0);
+  };
 
   await new Promise<void>((resolve, reject) => {
     httpServer = createServer((req, res) => {
-      lastActivity = Date.now();
       if (!validateHost(req, res) || !validateOrigin(req, res)) return;
+      const start = Date.now();
+      const url = req.url ?? '';
+      res.on('finish', () => {
+        log(
+          `HTTP ${req.method} ${url} → ${res.statusCode} (${Date.now() - start}ms)`,
+        );
+      });
+      if (req.method === 'GET' && url === '/health') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            name: SERVER_NAME,
+            version: SERVER_VERSION,
+            pid: process.pid,
+          }),
+        );
+        return;
+      }
+      if (req.method === 'POST' && url === '/shutdown') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+        setTimeout(() => shutdown('收到 /shutdown 请求'), 100);
+        return;
+      }
       void nodeHandler(req, res);
     });
     httpServer.once('error', reject);
@@ -559,27 +859,10 @@ async function runDaemon(): Promise<void> {
     `[text-to-design-mcp] daemon: MCP HTTP http://127.0.0.1:${HTTP_PORT}/mcp (opencode 会话经 shim 连接)\n`,
   );
   process.stderr.write(
-    `[text-to-design-mcp] daemon 就绪,${IDLE_TIMEOUT_MS / 60000} 分钟无请求自动退出\n`,
+    `[text-to-design-mcp] daemon 就绪,常驻运行(更新时由版本自检自动替换)\n`,
   );
 
-  const idleTimer = setInterval(() => {
-    if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
-      process.stderr.write('[text-to-design-mcp] daemon 空闲超时,自动退出\n');
-      clearInterval(idleTimer);
-      void handler.close();
-      bridge.stop();
-      httpServer?.close();
-      process.exit(0);
-    }
-  }, 60_000);
-
-  process.on('SIGINT', () => {
-    clearInterval(idleTimer);
-    void handler.close();
-    bridge.stop();
-    httpServer?.close();
-    process.exit(0);
-  });
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 /** shim 模式:探测 daemon;无则拉起并等待就绪 */

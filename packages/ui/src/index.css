@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 细滚动条(浅色主题,与 base-300 一致) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e9eee2 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e9eee2;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d6ddd0;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 提示条切换淡入(元素挂载时自动播放) */
+.hint-enter {
+  animation: hintFade 150ms ease;
+}
+
+@keyframes hintFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

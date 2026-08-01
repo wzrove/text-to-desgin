@@ -13,7 +13,17 @@ export type PluginMethod =
   | 'group'
   | 'export'
   | 'list_fonts'
-  | 'fill_image';
+  | 'fill_image'
+  | 'flatten'
+  | 'outline_stroke'
+  | 'reparent'
+  | 'create_component'
+  | 'create_instance'
+  | 'swap_component'
+  | 'set_instance_properties'
+  | 'import_component'
+  | 'combine_as_variants'
+  | 'detach_instance';
 
 export type PingParams = Record<string, never>;
 
@@ -119,6 +129,53 @@ export interface FillImageParams {
   hasBinary?: boolean;
 }
 
+export interface FlattenParams {
+  ids: string[];
+}
+
+export interface OutlineStrokeParams {
+  ids: string[];
+}
+
+export interface ReparentParams {
+  ids: string[];
+  parentId?: string;
+  index?: number;
+}
+
+export interface CreateComponentParams {
+  ids: string[];
+  name?: string;
+}
+
+export interface CreateInstanceParams {
+  ids: string[];
+}
+
+export interface SwapComponentParams {
+  ids: string[];
+  componentId: string;
+}
+
+export interface SetInstancePropertiesParams {
+  ids: string[];
+  properties: Record<string, string>;
+}
+
+export interface ImportComponentParams {
+  key: string;
+  name?: string;
+}
+
+export interface CombineAsVariantsParams {
+  ids: string[];
+  name?: string;
+}
+
+export interface DetachInstanceParams {
+  ids: string[];
+}
+
 export type ListFontsParams = Record<string, never>;
 
 export type RequestParams<M extends PluginMethod> = M extends 'ping'
@@ -145,7 +202,27 @@ export type RequestParams<M extends PluginMethod> = M extends 'ping'
                       ? ExportParams
                       : M extends 'fill_image'
                         ? FillImageParams
-                        : ListFontsParams;
+                        : M extends 'flatten'
+                          ? FlattenParams
+                          : M extends 'outline_stroke'
+                            ? OutlineStrokeParams
+                            : M extends 'reparent'
+                              ? ReparentParams
+                              : M extends 'create_component'
+                                ? CreateComponentParams
+                                : M extends 'create_instance'
+                                  ? CreateInstanceParams
+                                  : M extends 'swap_component'
+                                    ? SwapComponentParams
+                                    : M extends 'set_instance_properties'
+                                      ? SetInstancePropertiesParams
+                                      : M extends 'import_component'
+                                        ? ImportComponentParams
+                                        : M extends 'combine_as_variants'
+                                          ? CombineAsVariantsParams
+                                          : M extends 'detach_instance'
+                                            ? DetachInstanceParams
+                                            : ListFontsParams;
 
 export type PluginRequest = (
   | { type: 'request'; id: string; method: 'ping'; params: PingParams }
@@ -184,6 +261,66 @@ export type PluginRequest = (
       id: string;
       method: 'fill_image';
       params: FillImageParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'flatten';
+      params: FlattenParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'outline_stroke';
+      params: OutlineStrokeParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'reparent';
+      params: ReparentParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'create_component';
+      params: CreateComponentParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'create_instance';
+      params: CreateInstanceParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'swap_component';
+      params: SwapComponentParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'set_instance_properties';
+      params: SetInstancePropertiesParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'import_component';
+      params: ImportComponentParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'combine_as_variants';
+      params: CombineAsVariantsParams;
+    }
+  | {
+      type: 'request';
+      id: string;
+      method: 'detach_instance';
+      params: DetachInstanceParams;
     }
   | {
       type: 'request';

@@ -13,7 +13,17 @@ export type PluginMethod =
   | 'group'
   | 'export'
   | 'list_fonts'
-  | 'fill_image';
+  | 'fill_image'
+  | 'flatten'
+  | 'outline_stroke'
+  | 'reparent'
+  | 'create_component'
+  | 'create_instance'
+  | 'swap_component'
+  | 'set_instance_properties'
+  | 'import_component'
+  | 'combine_as_variants'
+  | 'detach_instance';
 
 export type PluginResponse = {
   type: 'response';
@@ -41,12 +51,17 @@ type PluginRequestFrame = {
 
 type Pending = {
   id: string;
+  method: PluginMethod;
   resolve: (data: unknown) => void;
   reject: (err: Error) => void;
   timer: NodeJS.Timeout;
   waitBinary: boolean;
   binaryCount: number;
   buffers: Buffer[];
+  /** 二进制响应 meta 帧中的结构数据(bytes 已被 UI 剥离) */
+  data?: unknown;
+  /** 请求发出时刻,用于统计耗时 */
+  startedAt: number;
 };
 
 const DEFAULT_TIMEOUT = 30000;
@@ -88,19 +103,22 @@ export class PendingManager {
           }
         : { type: 'request', id, method, params };
     return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        log(`请求超时: ${id} ${method}`);
+        log(`请求超时: ${id} ${method} 耗时=${Date.now() - startedAt}ms`);
         reject(new Error(`请求超时: ${method}`));
       }, timeout);
       this.pending.set(id, {
         id,
+        method,
         resolve,
         reject,
         timer,
         waitBinary: false,
         binaryCount: 0,
         buffers: [],
+        startedAt,
       });
       log(
         `发出请求: ${id} ${method}${binary != null ? ` +binary(${binary.byteLength}B)` : ''}`,
@@ -149,13 +167,14 @@ export class PendingManager {
       log(`二进制响应开始: id=${msg.id} count=${msg.binaryCount ?? 1}`);
       pending.waitBinary = true;
       pending.binaryCount = msg.binaryCount ?? 1;
+      pending.data = msg.data;
       this.binaryTarget = pending;
       return;
     }
     this.pending.delete(msg.id);
     clearTimeout(pending.timer);
     log(
-      `匹配响应: id=${msg.id} ok=${msg.ok}${msg.ok ? '' : ` error=${msg.error ?? ''}`}`,
+      `响应: ${pending.id} ${pending.method} ok=${msg.ok} 耗时=${Date.now() - pending.startedAt}ms${msg.ok ? '' : ` error=${msg.error ?? ''}`}`,
     );
     if (msg.ok) pending.resolve(msg.data);
     else pending.reject(new Error(msg.error ?? 'plugin error'));
@@ -173,7 +192,10 @@ export class PendingManager {
     if (this.binaryTarget.buffers.length >= this.binaryTarget.binaryCount) {
       const target = this.binaryTarget;
       this.binaryTarget = null;
-      log(`二进制组装完成: id=${target.id} ${target.buffers.length} 帧`);
+      const total = target.buffers.reduce((s, b) => s + b.byteLength, 0);
+      log(
+        `二进制组装完成: id=${target.id} ${target.buffers.length} 帧 ${total}B 耗时=${Date.now() - target.startedAt}ms`,
+      );
       this.settle(target);
     }
   }
@@ -195,8 +217,22 @@ export class PendingManager {
   private settle(pending: Pending): void {
     this.pending.delete(pending.id);
     clearTimeout(pending.timer);
-    const data =
-      pending.buffers.length === 1 ? pending.buffers[0] : pending.buffers;
-    pending.resolve(data);
+    pending.resolve(mergeBytes(pending.data, pending.buffers));
   }
+}
+
+/** 把二进制帧回填进 meta 结构(按帧序与插入序一一对应),兜底返回裸 Buffer */
+function mergeBytes(data: unknown, buffers: Buffer[]): unknown {
+  const single = buffers.length === 1 ? buffers[0] : buffers;
+  if (!data || typeof data !== 'object') return single;
+  const d = data as Record<string, unknown>;
+  if (d.exports && typeof d.exports === 'object') {
+    const exports_ = d.exports as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    Object.entries(exports_).forEach(([k, e], i) => {
+      out[k] = { ...(e as Record<string, unknown>), bytes: buffers[i] };
+    });
+    return { ...d, exports: out };
+  }
+  return { ...d, bytes: single };
 }
