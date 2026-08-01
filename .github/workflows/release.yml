@@ -36,6 +36,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: 推送版本 tag
+        run: git push origin --tags
       - name: 为新 tag 创建 GitHub Release
         run: |
           for tag in $(git tag --sort=-creatordate); do
