@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "description": "text-to-design 的 jsDesign 插件包:构建产物含 ui.html + code.js + manifest.json,导入即用",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wzrove/text-to-design"
+  },
   "files": [
     "dist",
     "README.md"

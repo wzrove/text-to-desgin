@@ -2,6 +2,10 @@
   "name": "text-to-design-mcp",
   "version": "0.1.1",
   "description": "MCP server bridging AI clients to the jsDesign (即时设计) desktop plugin via a local WebSocket",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wzrove/text-to-design"
+  },
   "type": "module",
   "bin": {
     "text-to-design-mcp": "dist/index.js"
