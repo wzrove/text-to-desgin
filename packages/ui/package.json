@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@jsdesigndeveloper/plugin-typings": "^1.0.12",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.1.2",
     "autoprefixer": "^10.4.21",
     "concurrently": "10.0.4",
     "daisyui": "^4.12.24",
