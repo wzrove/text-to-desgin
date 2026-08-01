@@ -12,8 +12,7 @@
     "typecheck": "pnpm -r run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "changeset": "pnpm changeset",
-    "release": "pnpm build && pnpm changeset publish",
+    "release": "pnpm build && pnpm exec changeset publish",
     "mcp": "pnpm --filter text-to-design-mcp start:dev"
   },
   "devDependencies": {
