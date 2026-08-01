@@ -1,5 +1,11 @@
 # text-to-design-mcp
 
+## 0.2.0
+
+### Minor Changes
+
+- [`6ed97a6`](https://github.com/wzrove/text-to-design/commit/6ed97a68b79014e81677110a81060eecdd48e45d) Thanks [@wzrove](https://github.com/wzrove)! - 新增组件/变体操作与 SVG 原生导入
+
 ## 0.1.1
 
 ### Patch Changes
