@@ -67,7 +67,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_ping',
+    'jsd_ping',
     { description: '检查 jsDesign 插件是否在线(需先启动插件并保持运行)' },
     async () => {
       try {
@@ -83,7 +83,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_get_selection',
+    'jsd_get_selection',
     {
       description:
         '获取即时设计画布当前选中的节点信息(名称/类型/尺寸/位置/填充/文本/子树结构)',
@@ -99,7 +99,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_execute',
+    'jsd_execute',
     {
       description:
         '在画布执行声明式设计指令。ops 为节点数组,每项: {op:"frame"|"rect"|"ellipse"|"line"|"polygon"|"star"|"vector"|"boolean"|"text", name?, x?, y?, w?, h?, fill?, radius?, rotation?, opacity?, stroke?, strokeWeight?, shadow?:{color,x,y,radius,spread}, gradient?:{stops:[{color,position}],angle}, pointCount?, fontSize?, fontWeight?, fontFamily?, characters?, textAlign?, lineHeight?, letterSpacing?, layout?:{mode,itemSpacing,padding}, radiusTopLeft?..., children?:[...] }。op 为 vector 时可用 paths 传 SVG path data(单个或数组,如 "M0 0 L100 0 L100 100 Z",可含 windingRule);op 为 boolean 时 children 至少 2 个,booleanType 取 UNION|SUBTRACT|INTERSECT|EXCLUDE(默认 UNION)。自动插入到画布中心',
@@ -118,7 +118,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_create_svg',
+    'jsd_create_svg',
     {
       description:
         '将 SVG 字符串直接导入画布(原生 createNodeFromSvg,完整保留 path/矢量/渐变/描边,不经 htmlToSvg 降级)',
@@ -145,7 +145,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_html_to_design',
+    'jsd_html_to_design',
     {
       description:
         '将 HTML 字符串转换为 jsDesign 设计节点(SVG 保真路线,忽略复杂样式),插入画布中心',
@@ -169,7 +169,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_update_selection',
+    'jsd_update_selection',
     {
       description:
         '修改画布中选中的节点(可按 ids 指定,按 matchName 过滤,recursive 递归子节点)。props 支持 name/fill/x/y/w/h/cornerRadius/radiusTopLeft/radiusTopRight/radiusBottomLeft/radiusBottomRight/visible/rotation/opacity/characters/fontSize/fontWeight/fontFamily/textAlign/lineHeight/letterSpacing/stroke/strokeWeight/strokeAlign/shadow/layoutMode/itemSpacing/padding/pointCount',
@@ -188,49 +188,56 @@ function buildServer(): McpServer {
           .describe('是否递归应用到子节点,默认 false'),
         props: z
           .object({
-            name: z.string().optional(),
+            name: z.string().optional().describe('图层名称'),
             fill: z
               .string()
               .optional()
               .describe('十六进制颜色,如 #ff0000 或 #ff000080(带透明度)'),
-            x: z.number().optional(),
-            y: z.number().optional(),
-            w: z.number().optional(),
-            h: z.number().optional(),
-            cornerRadius: z.number().optional(),
-            radiusTopLeft: z.number().optional(),
-            radiusTopRight: z.number().optional(),
-            radiusBottomLeft: z.number().optional(),
-            radiusBottomRight: z.number().optional(),
-            visible: z.boolean().optional(),
-            rotation: z.number().optional(),
-            opacity: z.number().optional(),
-            characters: z.string().optional(),
-            fontSize: z.number().optional(),
-            fontWeight: z.number().optional(),
-            fontFamily: z.string().optional(),
+            x: z.number().optional().describe('X 坐标(px)'),
+            y: z.number().optional().describe('Y 坐标(px)'),
+            w: z.number().optional().describe('宽度(px)'),
+            h: z.number().optional().describe('高度(px)'),
+            cornerRadius: z.number().optional().describe('四角统一圆角半径'),
+            radiusTopLeft: z.number().optional().describe('左上角圆角'),
+            radiusTopRight: z.number().optional().describe('右上角圆角'),
+            radiusBottomLeft: z.number().optional().describe('左下角圆角'),
+            radiusBottomRight: z.number().optional().describe('右下角圆角'),
+            visible: z.boolean().optional().describe('是否可见'),
+            rotation: z.number().optional().describe('旋转角度(度)'),
+            opacity: z.number().optional().describe('不透明度 0~1'),
+            characters: z.string().optional().describe('文本内容'),
+            fontSize: z.number().optional().describe('字号(px)'),
+            fontWeight: z.number().optional().describe('字重'),
+            fontFamily: z.string().optional().describe('字体族'),
             textAlign: z
               .enum(['LEFT', 'CENTER', 'RIGHT', 'JUSTIFIED'])
-              .optional(),
-            lineHeight: z.number().optional(),
-            letterSpacing: z.number().optional(),
+              .optional()
+              .describe('文本对齐方式'),
+            lineHeight: z.number().optional().describe('行高'),
+            letterSpacing: z.number().optional().describe('字距'),
             stroke: z.string().optional().describe('描边颜色,如 #ffffff'),
-            strokeWeight: z.number().optional(),
-            strokeAlign: z.enum(['CENTER', 'INSIDE', 'OUTSIDE']).optional(),
+            strokeWeight: z.number().optional().describe('描边粗细'),
+            strokeAlign: z
+              .enum(['CENTER', 'INSIDE', 'OUTSIDE'])
+              .optional()
+              .describe('描边对齐'),
             shadow: z
               .object({
-                color: z.string().optional(),
-                x: z.number().optional(),
-                y: z.number().optional(),
-                radius: z.number().optional(),
-                spread: z.number().optional(),
+                color: z.string().optional().describe('阴影颜色'),
+                x: z.number().optional().describe('阴影 X 偏移'),
+                y: z.number().optional().describe('阴影 Y 偏移'),
+                radius: z.number().optional().describe('阴影模糊半径'),
+                spread: z.number().optional().describe('阴影扩展'),
               })
               .optional()
               .describe('原生阴影(下拉阴影)'),
-            layoutMode: z.enum(['NONE', 'HORIZONTAL', 'VERTICAL']).optional(),
-            itemSpacing: z.number().optional(),
-            padding: z.number().optional(),
-            pointCount: z.number().optional(),
+            layoutMode: z
+              .enum(['NONE', 'HORIZONTAL', 'VERTICAL'])
+              .optional()
+              .describe('自动布局方向'),
+            itemSpacing: z.number().optional().describe('自动布局项间距'),
+            padding: z.number().optional().describe('自动布局内边距'),
+            pointCount: z.number().optional().describe('多边形/星形角点数'),
           })
           .describe('要修改的属性'),
       }),
@@ -262,7 +269,7 @@ function buildServer(): McpServer {
   });
 
   server.registerTool(
-    'text_to_design_find',
+    'jsd_find',
     {
       description:
         '在当前页面查找节点,可按名称/类型过滤,返回序列化节点列表(最多 100 条)',
@@ -279,136 +286,60 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_set_selection',
-    {
-      description: '设置画布当前选中节点(传入节点 ids)',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要选中的节点 id 列表'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('set_selection', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_remove',
-    {
-      description: '删除节点(按 ids 或 matchName,缺省删除当前选中)',
-      inputSchema: z.object({
-        ids: z
-          .array(z.string())
-          .optional()
-          .describe('要删除的节点 id 列表,缺省用当前选中'),
-        matchName: z.string().optional().describe('按名称精确匹配过滤'),
-      }),
-    },
-    async ({ ids, matchName }) => {
-      try {
-        const data = await bridge.request('remove', { ids, matchName });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_clone',
-    {
-      description: '复制节点到当前页面(原节点右下偏移 24px)',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要复制的节点 id 列表'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('clone', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_group',
-    {
-      description: '将多个节点编组(或 ungroup 取消编组)',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要编组的节点 id 列表'),
-        name: z.string().optional().describe('组名'),
-        ungroup: z.boolean().optional().describe('true 时取消编组'),
-      }),
-    },
-    async ({ ids, name, ungroup }) => {
-      try {
-        const data = await bridge.request('group', { ids, name, ungroup });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_flatten',
-    {
-      description: '将多个节点合并为单个矢量(VectorNode),原节点被吸收',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要合并的节点 id 列表(至少 2 个)'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('flatten', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_outline_stroke',
-    {
-      description: '将节点描边转为矢量轮廓(outlineStroke),返回新矢量节点',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要转描边的节点 id 列表'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('outline_stroke', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_reparent',
+    'jsd_manage_nodes',
     {
       description:
-        '移动节点到目标父节点下(原生移动,自动脱离原父)。parentId 缺省时用当前选中第一个节点作父;index 可指定插入顺序',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要移动的节点 id 列表'),
-        parentId: z
-          .string()
-          .optional()
-          .describe('目标父节点 id,缺省用当前选中第一个节点'),
-        index: z.number().optional().describe('插入位置,缺省追加到末尾'),
-      }),
+        '对节点执行结构操作。按 op 分发:select 设置选中 / remove 删除 / clone 复制(右下偏移24px) / group 编组 / ungroup 取消编组 / flatten 合并为单个矢量 / outline_stroke 描边转矢量轮廓 / reparent 移动到目标父节点下',
+      inputSchema: z.discriminatedUnion('op', [
+        z.object({
+          op: z.literal('select'),
+          ids: z.array(z.string()).describe('要选中的节点 id 列表'),
+        }),
+        z.object({
+          op: z.literal('remove'),
+          ids: z
+            .array(z.string())
+            .optional()
+            .describe('要删除的节点 id 列表,缺省用当前选中'),
+          matchName: z.string().optional().describe('按名称精确匹配过滤'),
+        }),
+        z.object({
+          op: z.literal('clone'),
+          ids: z.array(z.string()).describe('要复制的节点 id 列表'),
+        }),
+        z.object({
+          op: z.literal('group'),
+          ids: z.array(z.string()).describe('要编组的节点 id 列表'),
+          name: z.string().optional().describe('组名'),
+        }),
+        z.object({
+          op: z.literal('ungroup'),
+          ids: z.array(z.string()).describe('要取消编组的节点 id 列表'),
+        }),
+        z.object({
+          op: z.literal('flatten'),
+          ids: z
+            .array(z.string())
+            .describe('要合并为单个矢量的节点 id 列表(至少 2 个)'),
+        }),
+        z.object({
+          op: z.literal('outline_stroke'),
+          ids: z.array(z.string()).describe('要转描边的节点 id 列表'),
+        }),
+        z.object({
+          op: z.literal('reparent'),
+          ids: z.array(z.string()).describe('要移动的节点 id 列表'),
+          parentId: z
+            .string()
+            .optional()
+            .describe('目标父节点 id,缺省用当前选中第一个节点'),
+          index: z.number().optional().describe('插入位置,缺省追加到末尾'),
+        }),
+      ]),
     },
-    async ({ ids, parentId, index }) => {
+    async (params) => {
       try {
-        const data = await bridge.request('reparent', { ids, parentId, index });
+        const data = await bridge.request('node_op', params);
         return text(data);
       } catch (e) {
         return err(e);
@@ -417,84 +348,55 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_create_component',
-    {
-      description: '将指定节点固化为组件(ComponentNode),原节点移入组件内',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('要固化为组件的节点 id 列表'),
-        name: z.string().optional().describe('组件名,默认 component'),
-      }),
-    },
-    async ({ ids, name }) => {
-      try {
-        const data = await bridge.request('create_component', { ids, name });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_create_instance',
-    {
-      description: '从组件节点创建实例(InstanceNode),放到画布中心',
-      inputSchema: z.object({
-        ids: z
-          .array(z.string())
-          .describe('组件(COMPONENT)节点 id 列表,每个生成一个实例'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('create_instance', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_swap_component',
-    {
-      description: '交换实例的组件(实例样式整体换成另一个组件)',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
-        componentId: z.string().describe('目标组件(COMPONENT)节点 id'),
-      }),
-    },
-    async ({ ids, componentId }) => {
-      try {
-        const data = await bridge.request('swap_component', {
-          ids,
-          componentId,
-        });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_set_instance_properties',
+    'jsd_manage_components',
     {
       description:
-        '设置实例的变体属性(如 {"状态":"禁用","尺寸":"大"}),可选值见 find/get_selection 返回的 variantGroupProperties',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
-        properties: z
-          .record(z.string(), z.string())
-          .describe('变体属性名→值,如 {"状态":"禁用"}'),
-      }),
+        '组件/实例操作。按 op 分发:create_component 固化为组件 / create_instance 从组件生成实例 / detach_instance 解绑实例(转 Frame) / import_component 从团队库按 key 导入 / swap_component 交换实例组件 / set_instance_properties 设置变体属性 / combine_as_variants 合并为组件集',
+      inputSchema: z.discriminatedUnion('op', [
+        z.object({
+          op: z.literal('create_component'),
+          ids: z.array(z.string()).describe('要固化为组件的节点 id 列表'),
+          name: z.string().optional().describe('组件名,默认 component'),
+        }),
+        z.object({
+          op: z.literal('create_instance'),
+          ids: z
+            .array(z.string())
+            .describe('组件(COMPONENT)节点 id 列表,每个生成一个实例'),
+        }),
+        z.object({
+          op: z.literal('detach_instance'),
+          ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+        }),
+        z.object({
+          op: z.literal('import_component'),
+          key: z.string().describe('组件 Key'),
+          name: z.string().optional().describe('导入后的组件名'),
+        }),
+        z.object({
+          op: z.literal('swap_component'),
+          ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+          componentId: z.string().describe('目标组件(COMPONENT)节点 id'),
+        }),
+        z.object({
+          op: z.literal('set_instance_properties'),
+          ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
+          properties: z
+            .record(z.string(), z.string())
+            .describe('变体属性名→值,如 {"状态":"禁用"}'),
+        }),
+        z.object({
+          op: z.literal('combine_as_variants'),
+          ids: z
+            .array(z.string())
+            .describe('组件(COMPONENT)节点 id 列表(至少 2 个)'),
+          name: z.string().optional().describe('组件集名'),
+        }),
+      ]),
     },
-    async ({ ids, properties }) => {
+    async (params) => {
       try {
-        const data = await bridge.request('set_instance_properties', {
-          ids,
-          properties,
-        });
+        const data = await bridge.request('component_op', params);
         return text(data);
       } catch (e) {
         return err(e);
@@ -503,67 +405,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_import_component',
-    {
-      description:
-        '从团队库按 key 导入组件到当前页面。key 获取方式:jsDesign 编辑器中右键组件 → 复制链接/组件 Key(如 URL 里 componentKey= 或分享链接中的 key 参数)',
-      inputSchema: z.object({
-        key: z.string().describe('组件 Key'),
-        name: z.string().optional().describe('导入后的组件名'),
-      }),
-    },
-    async ({ key, name }) => {
-      try {
-        const data = await bridge.request('import_component', { key, name });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_combine_as_variants',
-    {
-      description:
-        '将多个组件合并为组件集(ComponentSetNode),生成变体后可配合 set_instance_properties 切换',
-      inputSchema: z.object({
-        ids: z
-          .array(z.string())
-          .describe('组件(COMPONENT)节点 id 列表(至少 2 个)'),
-        name: z.string().optional().describe('组件集名'),
-      }),
-    },
-    async ({ ids, name }) => {
-      try {
-        const data = await bridge.request('combine_as_variants', { ids, name });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_detach_instance',
-    {
-      description: '解绑实例(INSTANCE → FrameNode),解绑后可自由编辑内容',
-      inputSchema: z.object({
-        ids: z.array(z.string()).describe('实例(INSTANCE)节点 id 列表'),
-      }),
-    },
-    async ({ ids }) => {
-      try {
-        const data = await bridge.request('detach_instance', { ids });
-        return text(data);
-      } catch (e) {
-        return err(e);
-      }
-    },
-  );
-
-  server.registerTool(
-    'text_to_design_export',
+    'jsd_export',
     {
       description:
         '导出节点为图片/文件,返回二进制字节。可传 savePath 落盘本地文件(推荐,配合不支持图像的模型),或 includeDataUrl 生成 base64 dataURL(供支持图像的模型查看)',
@@ -623,7 +465,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_fill_image',
+    'jsd_fill_image',
     {
       description:
         '将本地图片文件字节填充到指定节点(IMAGE fill)。MCP server 读取本地文件,经二进制通道传给插件,插件调用 createImage 后填入节点',
@@ -658,7 +500,7 @@ function buildServer(): McpServer {
   );
 
   server.registerTool(
-    'text_to_design_list_fonts',
+    'jsd_list_fonts',
     { description: '列出当前环境可用字体族' },
     async () => {
       try {
@@ -703,10 +545,7 @@ async function probeUpstream(): Promise<
       ),
     );
     const { tools } = await client.listTools();
-    if (
-      tools.length === 0 ||
-      !tools.every((t) => t.name.startsWith('text_to_design_'))
-    ) {
+    if (tools.length === 0 || !tools.every((t) => t.name.startsWith('jsd_'))) {
       await client.close();
       return { state: 'foreign' };
     }

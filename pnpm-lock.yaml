@@ -53,6 +53,9 @@ importers:
       htmlparser2:
         specifier: ^10.0.0
         version: 10.1.0
+      text-to-design-shared:
+        specifier: workspace:*
+        version: link:../shared
       ws:
         specifier: ^8.21.1
         version: 8.21.1

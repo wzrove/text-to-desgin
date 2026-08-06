@@ -108,74 +108,111 @@ jsDesign.ui.onmessage = async (msg: PluginRequest) => {
         send(id, true, r);
         break;
       }
-      case 'set_selection': {
-        const r = setSelection(msg.params.ids);
-        send(id, true, r);
+      case 'node_op': {
+        const p = msg.params;
+        switch (p.op) {
+          case 'select':
+            send(id, true, setSelection(p.ids ?? []));
+            break;
+          case 'remove':
+            send(id, true, removeNodes({ ids: p.ids, matchName: p.matchName }));
+            break;
+          case 'clone':
+            send(id, true, cloneNodes(p.ids ?? []));
+            break;
+          case 'group':
+            send(id, true, groupNodes({ ids: p.ids ?? [], name: p.name }));
+            break;
+          case 'ungroup':
+            send(id, true, groupNodes({ ids: p.ids ?? [], ungroup: true }));
+            break;
+          case 'flatten':
+            send(id, true, flattenNodes(p.ids ?? []));
+            break;
+          case 'outline_stroke':
+            send(id, true, outlineStrokeNodes(p.ids ?? []));
+            break;
+          case 'reparent':
+            send(
+              id,
+              true,
+              reparentNodes({
+                ids: p.ids ?? [],
+                parentId: p.parentId,
+                index: p.index,
+              }),
+            );
+            break;
+          default:
+            send(
+              id,
+              false,
+              undefined,
+              `未知 node_op: ${String((p as { op?: string }).op)}`,
+            );
+            return;
+        }
         break;
       }
-      case 'remove': {
-        const r = removeNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'clone': {
-        const r = cloneNodes(msg.params.ids);
-        send(id, true, r);
-        break;
-      }
-      case 'group': {
-        const r = groupNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'flatten': {
-        const r = flattenNodes(msg.params.ids);
-        send(id, true, r);
-        break;
-      }
-      case 'outline_stroke': {
-        const r = outlineStrokeNodes(msg.params.ids);
-        send(id, true, r);
-        break;
-      }
-      case 'reparent': {
-        const r = reparentNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'create_component': {
-        const r = createComponentNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'create_instance': {
-        const r = createInstances(msg.params.ids);
-        send(id, true, r);
-        break;
-      }
-      case 'swap_component': {
-        const r = swapComponents(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'set_instance_properties': {
-        const r = setInstanceProperties(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'import_component': {
-        const r = await importComponentNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'combine_as_variants': {
-        const r = combineAsVariantsNodes(msg.params);
-        send(id, true, r);
-        break;
-      }
-      case 'detach_instance': {
-        const r = detachInstanceNodes(msg.params.ids);
-        send(id, true, r);
+      case 'component_op': {
+        const p = msg.params;
+        switch (p.op) {
+          case 'create_component':
+            send(
+              id,
+              true,
+              createComponentNodes({ ids: p.ids ?? [], name: p.name }),
+            );
+            break;
+          case 'create_instance':
+            send(id, true, createInstances(p.ids ?? []));
+            break;
+          case 'detach_instance':
+            send(id, true, detachInstanceNodes(p.ids ?? []));
+            break;
+          case 'import_component':
+            send(
+              id,
+              true,
+              await importComponentNodes({ key: p.key ?? '', name: p.name }),
+            );
+            break;
+          case 'swap_component':
+            send(
+              id,
+              true,
+              swapComponents({
+                ids: p.ids ?? [],
+                componentId: p.componentId ?? '',
+              }),
+            );
+            break;
+          case 'set_instance_properties':
+            send(
+              id,
+              true,
+              setInstanceProperties({
+                ids: p.ids ?? [],
+                properties: p.properties ?? {},
+              }),
+            );
+            break;
+          case 'combine_as_variants':
+            send(
+              id,
+              true,
+              combineAsVariantsNodes({ ids: p.ids ?? [], name: p.name }),
+            );
+            break;
+          default:
+            send(
+              id,
+              false,
+              undefined,
+              `未知 component_op: ${String((p as { op?: string }).op)}`,
+            );
+            return;
+        }
         break;
       }
       case 'export': {

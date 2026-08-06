@@ -58,7 +58,7 @@ text-to-design 能让 AI 助手(比如 opencode、Claude)直接在你的设计�
 5. 告诉用户完成情况,并提醒:
    - 在即时设计里「插件 → 导入」~/text-to-design-plugin/dist/manifest.json,运行插件,
      面板显示「已连接」即就绪
-   - 重启 AI 工具会话,用 text_to_design_ping 验证
+   - 重启 AI 工具会话,用 jsd_ping 验证
 ```
 
 **第二步:在即时设计里导入插件**
@@ -67,7 +67,7 @@ text-to-design 能让 AI 助手(比如 opencode、Claude)直接在你的设计�
 
 **第三步:重启 AI 工具**
 
-重启你的 AI 会话,让它调用 `text_to_design_ping` 确认一下。通了,就能开始用。
+重启你的 AI 会话,让它调用 `jsd_ping` 确认一下。通了,就能开始用。
 
 ## 怎么用
 
@@ -93,22 +93,18 @@ text-to-design 能让 AI 助手(比如 opencode、Claude)直接在你的设计�
 
 | 工具 | 说明 |
 | --- | --- |
-| `text_to_design_ping` | 检查插件是否在线 |
-| `text_to_design_get_selection` | 获取画布当前选中节点 |
-| `text_to_design_execute` | 执行声明式设计指令(frame/rect/text/... 节点树) |
-| `text_to_design_create_svg` | 直接导入 SVG 字符串(保留 path 矢量数据) |
-| `text_to_design_html_to_design` | HTML 转设计节点 |
-| `text_to_design_flatten` | 将多个节点合并为单个矢量 |
-| `text_to_design_outline_stroke` | 节点描边转矢量轮廓 |
-| `text_to_design_reparent` | 移动节点到目标父节点下 |
-| `text_to_design_create_component` | 节点固化为组件 |
-| `text_to_design_create_instance` | 从组件创建实例 |
-| `text_to_design_swap_component` | 交换实例的组件 |
-| `text_to_design_set_instance_properties` | 设置实例变体属性 |
-| `text_to_design_import_component` | 按 key 从团队库导入组件 |
-| `text_to_design_combine_as_variants` | 多个组件合并为组件集 |
-| `text_to_design_detach_instance` | 解绑实例为普通帧 |
-| `text_to_design_export` | 导出节点为 PNG/JPG/SVG/PDF |
+| `jsd_ping` | 检查插件是否在线 |
+| `jsd_get_selection` | 获取画布当前选中节点 |
+| `jsd_execute` | 执行声明式设计指令(frame/rect/text/... 节点树) |
+| `jsd_create_svg` | 直接导入 SVG 字符串(保留 path 矢量数据) |
+| `jsd_html_to_design` | HTML 转设计节点 |
+| `jsd_update_selection` | 修改选中节点的属性(位置/颜色/文字/圆角等) |
+| `jsd_find` | 按名称/类型查找节点 |
+| `jsd_manage_nodes` | 节点结构操作:select/remove/clone/group/ungroup/flatten/outline_stroke/reparent |
+| `jsd_manage_components` | 组件/实例操作:create_component/create_instance/detach_instance/import_component/swap_component/set_instance_properties/combine_as_variants |
+| `jsd_export` | 导出节点为 PNG/JPG/SVG/PDF |
+| `jsd_list_fonts` | 列出可用字体 |
+| `jsd_fill_image` | 用本地图片填充节点 |
 
 完整工具清单见 [`packages/mcp-server/README.md`](packages/mcp-server/README.md) 末尾。
 

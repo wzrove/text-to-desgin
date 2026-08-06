@@ -64,7 +64,7 @@
 - 「在画布中心画一个 300x200 的卡片,标题叫发布页,背景浅灰」
 - 「把选中的按钮导出成 PNG 存到 /tmp/btn.png」
 
-想确认插件通不通,先让它调 `text_to_design_ping`。
+想确认插件通不通,先让它调 `jsd_ping`。
 
 ## 常见问题
 
@@ -95,30 +95,18 @@ pkill -f text-to-design-mcp
 
 | 工具 | 用途 |
 | --- | --- |
-| `text_to_design_ping` | 检查插件是否在线 |
-| `text_to_design_get_selection` | 读取画布当前选中的节点 |
-| `text_to_design_execute` | 按描述创建节点(frame/rect/text 等,支持阴影/描边/渐变/文本样式) |
-| `text_to_design_create_svg` | 直接导入 SVG 字符串(保留 path/矢量数据,不经降级) |
-| `text_to_design_html_to_design` | 把 HTML 转成设计节点 |
-| `text_to_design_update_selection` | 修改选中节点的属性(位置/颜色/文字/圆角等) |
-| `text_to_design_find` | 按名称/类型查找节点 |
-| `text_to_design_set_selection` | 设置画布选中节点 |
-| `text_to_design_remove` | 删除节点 |
-| `text_to_design_clone` | 复制节点 |
-| `text_to_design_group` | 编组 / 取消编组 |
-| `text_to_design_flatten` | 把多个节点合并成单个矢量 |
-| `text_to_design_outline_stroke` | 把节点描边转成矢量轮廓 |
-| `text_to_design_reparent` | 移动节点到目标父节点下 |
-| `text_to_design_create_component` | 把节点固化成组件 |
-| `text_to_design_create_instance` | 从组件创建实例 |
-| `text_to_design_swap_component` | 交换实例的组件 |
-| `text_to_design_set_instance_properties` | 设置实例的变体属性 |
-| `text_to_design_import_component` | 按 key 从团队库导入组件 |
-| `text_to_design_combine_as_variants` | 把多个组件合并成组件集 |
-| `text_to_design_detach_instance` | 解绑实例为普通帧 |
-| `text_to_design_export` | 导出节点为 PNG/JPG/SVG/PDF |
-| `text_to_design_list_fonts` | 列出可用字体 |
-| `text_to_design_fill_image` | 用本地图片填充节点 |
+| `jsd_ping` | 检查插件是否在线 |
+| `jsd_get_selection` | 读取画布当前选中的节点 |
+| `jsd_execute` | 按描述创建节点(frame/rect/text 等,支持阴影/描边/渐变/文本样式) |
+| `jsd_create_svg` | 直接导入 SVG 字符串(保留 path/矢量数据,不经降级) |
+| `jsd_html_to_design` | 把 HTML 转成设计节点 |
+| `jsd_update_selection` | 修改选中节点的属性(位置/颜色/文字/圆角等) |
+| `jsd_find` | 按名称/类型查找节点 |
+| `jsd_manage_nodes` | 节点结构操作,op 含 select/remove/clone/group/ungroup/flatten/outline_stroke/reparent |
+| `jsd_manage_components` | 组件/实例操作,op 含 create_component/create_instance/detach_instance/import_component/swap_component/set_instance_properties/combine_as_variants |
+| `jsd_export` | 导出节点为 PNG/JPG/SVG/PDF |
+| `jsd_list_fonts` | 列出可用字体 |
+| `jsd_fill_image` | 用本地图片填充节点 |
 
 ### 工作原理(简版)
 

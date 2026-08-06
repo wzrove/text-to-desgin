@@ -7,23 +7,11 @@ export type PluginMethod =
   | 'create_svg'
   | 'update_selection'
   | 'find'
-  | 'set_selection'
-  | 'remove'
-  | 'clone'
-  | 'group'
   | 'export'
   | 'list_fonts'
   | 'fill_image'
-  | 'flatten'
-  | 'outline_stroke'
-  | 'reparent'
-  | 'create_component'
-  | 'create_instance'
-  | 'swap_component'
-  | 'set_instance_properties'
-  | 'import_component'
-  | 'combine_as_variants'
-  | 'detach_instance';
+  | 'node_op'
+  | 'component_op';
 
 export type PingParams = Record<string, never>;
 
@@ -96,23 +84,38 @@ export interface FindParams {
   depth?: number;
 }
 
-export interface SetSelectionParams {
-  ids: string[];
-}
-
-export interface RemoveParams {
+export interface NodeOpParams {
+  op:
+    | 'select'
+    | 'remove'
+    | 'clone'
+    | 'group'
+    | 'ungroup'
+    | 'flatten'
+    | 'outline_stroke'
+    | 'reparent';
   ids?: string[];
   matchName?: string;
-}
-
-export interface CloneParams {
-  ids: string[];
-}
-
-export interface GroupParams {
-  ids: string[];
   name?: string;
   ungroup?: boolean;
+  parentId?: string;
+  index?: number;
+}
+
+export interface ComponentOpParams {
+  op:
+    | 'create_component'
+    | 'create_instance'
+    | 'detach_instance'
+    | 'import_component'
+    | 'swap_component'
+    | 'set_instance_properties'
+    | 'combine_as_variants';
+  ids?: string[];
+  name?: string;
+  componentId?: string;
+  key?: string;
+  properties?: Record<string, string>;
 }
 
 export interface ExportParams {
@@ -129,53 +132,6 @@ export interface FillImageParams {
   hasBinary?: boolean;
 }
 
-export interface FlattenParams {
-  ids: string[];
-}
-
-export interface OutlineStrokeParams {
-  ids: string[];
-}
-
-export interface ReparentParams {
-  ids: string[];
-  parentId?: string;
-  index?: number;
-}
-
-export interface CreateComponentParams {
-  ids: string[];
-  name?: string;
-}
-
-export interface CreateInstanceParams {
-  ids: string[];
-}
-
-export interface SwapComponentParams {
-  ids: string[];
-  componentId: string;
-}
-
-export interface SetInstancePropertiesParams {
-  ids: string[];
-  properties: Record<string, string>;
-}
-
-export interface ImportComponentParams {
-  key: string;
-  name?: string;
-}
-
-export interface CombineAsVariantsParams {
-  ids: string[];
-  name?: string;
-}
-
-export interface DetachInstanceParams {
-  ids: string[];
-}
-
 export type ListFontsParams = Record<string, never>;
 
 export type RequestParams<M extends PluginMethod> = M extends 'ping'
@@ -190,39 +146,15 @@ export type RequestParams<M extends PluginMethod> = M extends 'ping'
           ? UpdateSelectionParams
           : M extends 'find'
             ? FindParams
-            : M extends 'set_selection'
-              ? SetSelectionParams
-              : M extends 'remove'
-                ? RemoveParams
-                : M extends 'clone'
-                  ? CloneParams
-                  : M extends 'group'
-                    ? GroupParams
-                    : M extends 'export'
-                      ? ExportParams
-                      : M extends 'fill_image'
-                        ? FillImageParams
-                        : M extends 'flatten'
-                          ? FlattenParams
-                          : M extends 'outline_stroke'
-                            ? OutlineStrokeParams
-                            : M extends 'reparent'
-                              ? ReparentParams
-                              : M extends 'create_component'
-                                ? CreateComponentParams
-                                : M extends 'create_instance'
-                                  ? CreateInstanceParams
-                                  : M extends 'swap_component'
-                                    ? SwapComponentParams
-                                    : M extends 'set_instance_properties'
-                                      ? SetInstancePropertiesParams
-                                      : M extends 'import_component'
-                                        ? ImportComponentParams
-                                        : M extends 'combine_as_variants'
-                                          ? CombineAsVariantsParams
-                                          : M extends 'detach_instance'
-                                            ? DetachInstanceParams
-                                            : ListFontsParams;
+            : M extends 'export'
+              ? ExportParams
+              : M extends 'fill_image'
+                ? FillImageParams
+                : M extends 'node_op'
+                  ? NodeOpParams
+                  : M extends 'component_op'
+                    ? ComponentOpParams
+                    : ListFontsParams;
 
 export type PluginRequest = (
   | { type: 'request'; id: string; method: 'ping'; params: PingParams }
@@ -246,15 +178,6 @@ export type PluginRequest = (
       params: UpdateSelectionParams;
     }
   | { type: 'request'; id: string; method: 'find'; params: FindParams }
-  | {
-      type: 'request';
-      id: string;
-      method: 'set_selection';
-      params: SetSelectionParams;
-    }
-  | { type: 'request'; id: string; method: 'remove'; params: RemoveParams }
-  | { type: 'request'; id: string; method: 'clone'; params: CloneParams }
-  | { type: 'request'; id: string; method: 'group'; params: GroupParams }
   | { type: 'request'; id: string; method: 'export'; params: ExportParams }
   | {
       type: 'request';
@@ -262,65 +185,12 @@ export type PluginRequest = (
       method: 'fill_image';
       params: FillImageParams;
     }
+  | { type: 'request'; id: string; method: 'node_op'; params: NodeOpParams }
   | {
       type: 'request';
       id: string;
-      method: 'flatten';
-      params: FlattenParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'outline_stroke';
-      params: OutlineStrokeParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'reparent';
-      params: ReparentParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'create_component';
-      params: CreateComponentParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'create_instance';
-      params: CreateInstanceParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'swap_component';
-      params: SwapComponentParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'set_instance_properties';
-      params: SetInstancePropertiesParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'import_component';
-      params: ImportComponentParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'combine_as_variants';
-      params: CombineAsVariantsParams;
-    }
-  | {
-      type: 'request';
-      id: string;
-      method: 'detach_instance';
-      params: DetachInstanceParams;
+      method: 'component_op';
+      params: ComponentOpParams;
     }
   | {
       type: 'request';

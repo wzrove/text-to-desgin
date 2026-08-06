@@ -1,53 +1,11 @@
+import type {
+  PluginMethod,
+  PluginRequest,
+  PluginResponse,
+} from 'text-to-design-shared';
 import { log } from './logger';
 
-export type PluginMethod =
-  | 'ping'
-  | 'get_selection'
-  | 'execute'
-  | 'create_svg'
-  | 'update_selection'
-  | 'find'
-  | 'set_selection'
-  | 'remove'
-  | 'clone'
-  | 'group'
-  | 'export'
-  | 'list_fonts'
-  | 'fill_image'
-  | 'flatten'
-  | 'outline_stroke'
-  | 'reparent'
-  | 'create_component'
-  | 'create_instance'
-  | 'swap_component'
-  | 'set_instance_properties'
-  | 'import_component'
-  | 'combine_as_variants'
-  | 'detach_instance';
-
-export type PluginResponse = {
-  type: 'response';
-  id: string;
-  ok: boolean;
-  data?: unknown;
-  error?: string;
-  hasBinary?: boolean;
-  binaryCount?: number;
-};
-
-type OutgoingRequest = {
-  type: 'request';
-  id: string;
-  method: PluginMethod;
-  params: unknown;
-};
-
-type PluginRequestFrame = {
-  type: 'request';
-  id: string;
-  method: PluginMethod;
-  params?: unknown;
-};
+export type { PluginMethod };
 
 type Pending = {
   id: string;
@@ -89,7 +47,7 @@ export class PendingManager {
       'bytes' in (params as Record<string, unknown>)
         ? ((params as Record<string, unknown>).bytes as Uint8Array)
         : null;
-    const payload: OutgoingRequest =
+    const payload = (
       binary != null
         ? {
             type: 'request',
@@ -101,7 +59,8 @@ export class PendingManager {
               bytes: undefined,
             },
           }
-        : { type: 'request', id, method, params };
+        : { type: 'request', id, method, params }
+    ) as PluginRequest;
     return new Promise((resolve, reject) => {
       const startedAt = Date.now();
       const timer = setTimeout(() => {
@@ -131,9 +90,9 @@ export class PendingManager {
   }
 
   onText(raw: Buffer): void {
-    let msg: PluginResponse | PluginRequestFrame;
+    let msg: PluginResponse | PluginRequest;
     try {
-      msg = JSON.parse(raw.toString()) as PluginResponse | PluginRequestFrame;
+      msg = JSON.parse(raw.toString()) as PluginResponse | PluginRequest;
     } catch {
       log(`WS 文本解析失败: ${raw.toString().slice(0, 100)}`);
       return;
