@@ -1,3 +1,8 @@
+import type {
+  ListFontsResult,
+  RawExportFile,
+  SerializedNode,
+} from 'text-to-design-shared';
 import { serializeNode } from './serialize';
 import { findNode } from './utils';
 
@@ -5,7 +10,7 @@ export async function exportNodes(params: {
   ids: string[];
   format?: 'PNG' | 'JPG' | 'SVG' | 'PDF';
   scale?: number;
-}): Promise<Record<string, unknown>> {
+}): Promise<{ exports: Record<string, RawExportFile> }> {
   const format = params.format ?? 'PNG';
   const scale = params.scale ?? 1;
   const nodes = findNode(params.ids);
@@ -16,7 +21,7 @@ export async function exportNodes(params: {
     format === 'PNG' || format === 'JPG'
       ? { format, constraint: { type: 'SCALE', value: scale } }
       : { format };
-  const out: Record<string, unknown> = {};
+  const out: Record<string, RawExportFile> = {};
   for (const n of nodes) {
     const bytes = await n.exportAsync(settings);
     out[n.id] = {
@@ -39,7 +44,7 @@ export async function exportNodes(params: {
 export async function fillImageNode(params: {
   ids: string[];
   bytes: Uint8Array;
-}): Promise<Record<string, unknown>> {
+}): Promise<{ updated: SerializedNode[] }> {
   if (!params.bytes || params.bytes.byteLength === 0) {
     throw new Error('无效的图片字节数据');
   }
@@ -56,7 +61,7 @@ export async function fillImageNode(params: {
   return { updated: nodes.map((n) => serializeNode(n)) };
 }
 
-export async function listFonts(): Promise<Record<string, unknown>> {
+export async function listFonts(): Promise<ListFontsResult> {
   const fonts = await jsDesign.listAvailableFontsAsync();
   const families = [...new Set(fonts.map((f) => f.fontName.family))].sort();
   return { families, count: families.length };

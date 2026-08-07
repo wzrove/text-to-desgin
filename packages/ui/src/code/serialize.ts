@@ -1,3 +1,5 @@
+import type { SerializedNode, SerializedNodeType } from 'text-to-design-shared';
+
 export const MAX_SERIALIZE_DEPTH = 2;
 
 function rgbToHex(c: { r: number; g: number; b: number }): string {
@@ -16,11 +18,11 @@ function isMixed(v: unknown): boolean {
 export function serializeNode(
   node: SceneNode,
   depth: number = MAX_SERIALIZE_DEPTH,
-): Record<string, unknown> {
-  const base: Record<string, unknown> = {
+): SerializedNode {
+  const base: SerializedNode = {
     id: node.id,
     name: node.name,
-    type: node.type,
+    type: node.type as SerializedNodeType,
     x: Math.round(node.x),
     y: Math.round(node.y),
   };
@@ -41,12 +43,18 @@ export function serializeNode(
     if (fill.type === 'SOLID') {
       base.fill = rgbToHex(fill.color);
     } else if (fill.type === 'GRADIENT_LINEAR') {
+      const stops = fill.gradientStops;
       base.gradient = {
-        type: fill.type,
-        stops: fill.gradientStops.map((s: ColorStop) => ({
-          color: rgbToHex(s.color),
-          position: s.position,
-        })),
+        type: 'GRADIENT_LINEAR',
+        stops: stops.map(
+          (s: {
+            color: { r: number; g: number; b: number };
+            position: number;
+          }) => ({
+            color: rgbToHex(s.color),
+            position: s.position,
+          }),
+        ),
       };
     }
   }
@@ -99,13 +107,10 @@ export function serializeNode(
       typeof r.bottomRightRadius === 'number' ? r.bottomRightRadius : undefined;
   }
   if ('pointCount' in node) {
-    (base as Record<string, unknown>).pointCount = (
-      node as PolygonNode
-    ).pointCount;
+    base.pointCount = (node as PolygonNode).pointCount;
   }
   if (node.type === 'VECTOR') {
-    const v = node as VectorNode;
-    base.vectorPaths = v.vectorPaths.map((p) => ({
+    base.vectorPaths = (node as VectorNode).vectorPaths.map((p) => ({
       data: p.data,
       windingRule: p.windingRule,
     }));
@@ -114,8 +119,7 @@ export function serializeNode(
     base.variantProperties = { ...(node as InstanceNode).variantProperties };
   }
   if (node.type === 'INSTANCE') {
-    const inst = node as InstanceNode;
-    base.mainComponentId = inst.mainComponent?.id;
+    base.mainComponentId = (node as InstanceNode).mainComponent?.id;
   }
   if (node.type === 'COMPONENT_SET') {
     const set = node as ComponentSetNode;
@@ -128,7 +132,7 @@ export function serializeNode(
   }
   if (node.type === 'TEXT') {
     base.characters = node.characters;
-    if (!isMixed(node.fontSize)) base.fontSize = node.fontSize;
+    if (!isMixed(node.fontSize)) base.fontSize = node.fontSize as number;
     const f = node.fontName as FontName | undefined;
     if (f?.family) base.fontFamily = f.family;
     if (f?.style && f.style !== 'Regular') base.fontWeight = f.style;

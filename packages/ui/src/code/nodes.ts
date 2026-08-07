@@ -1,8 +1,12 @@
-import type { FindParams } from 'text-to-design-shared';
+import type {
+  FindParams,
+  FindResult,
+  SerializedNode,
+} from 'text-to-design-shared';
 import { serializeNode } from './serialize';
 import { findNode } from './utils';
 
-export function findNodes(params: FindParams): Record<string, unknown> {
+export function findNodes(params: FindParams): FindResult {
   const page = jsDesign.currentPage;
   let nodes: SceneNode[];
   if (params.type != null) {
@@ -22,7 +26,7 @@ export function findNodes(params: FindParams): Record<string, unknown> {
   };
 }
 
-export function setSelection(ids: string[]): Record<string, unknown> {
+export function setSelection(ids: string[]): { selected: string[] } {
   const nodes = findNode(ids);
   if (nodes.length === 0) {
     throw new Error('没有找到要选中的节点');
@@ -31,10 +35,9 @@ export function setSelection(ids: string[]): Record<string, unknown> {
   return { selected: nodes.map((n) => n.id) };
 }
 
-export function removeNodes(params: {
-  ids?: string[];
-  matchName?: string;
-}): Record<string, unknown> {
+export function removeNodes(params: { ids?: string[]; matchName?: string }): {
+  removed: string[];
+} {
   let nodes: SceneNode[];
   if (params.ids != null && params.ids.length > 0) {
     nodes = findNode(params.ids);
@@ -54,7 +57,7 @@ export function removeNodes(params: {
   return { removed };
 }
 
-export function cloneNodes(ids: string[]): Record<string, unknown> {
+export function cloneNodes(ids: string[]): { created: SerializedNode[] } {
   const nodes = findNode(ids);
   if (nodes.length === 0) {
     throw new Error('没有找到要复制的节点');
@@ -76,7 +79,7 @@ export function groupNodes(params: {
   ids: string[];
   name?: string;
   ungroup?: boolean;
-}): Record<string, unknown> {
+}): { created: SerializedNode } | { ungrouped: string[] } {
   if (params.ungroup) {
     const nodes = findNode(params.ids);
     const grouped = nodes.filter((n) => n.type === 'GROUP');
@@ -95,7 +98,7 @@ export function groupNodes(params: {
   return { created: serializeNode(group) };
 }
 
-export function flattenNodes(ids: string[]): Record<string, unknown> {
+export function flattenNodes(ids: string[]): { created: SerializedNode } {
   const nodes = findNode(ids);
   if (nodes.length < 2) {
     throw new Error('flatten 至少需要 2 个节点');
@@ -105,7 +108,9 @@ export function flattenNodes(ids: string[]): Record<string, unknown> {
   return { created: serializeNode(vector) };
 }
 
-export function outlineStrokeNodes(ids: string[]): Record<string, unknown> {
+export function outlineStrokeNodes(ids: string[]): {
+  created: SerializedNode[];
+} {
   const nodes = findNode(ids);
   if (nodes.length === 0) {
     throw new Error('没有找到要转描边的节点');
@@ -126,7 +131,7 @@ export function reparentNodes(params: {
   ids: string[];
   parentId?: string;
   index?: number;
-}): Record<string, unknown> {
+}): { moved: SerializedNode[] } {
   const nodes = findNode(params.ids);
   if (nodes.length === 0) {
     throw new Error('没有找到要移动的节点');

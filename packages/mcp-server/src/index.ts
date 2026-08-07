@@ -58,6 +58,138 @@ function err(e: unknown): { content: { type: 'text'; text: string }[] } {
   };
 }
 
+/** 返回类型:人读文本 + 结构化数据(与 outputSchema 对应) */
+function structured(data: unknown): {
+  content: { type: 'text'; text: string }[];
+  structuredContent: unknown;
+} {
+  return { content: text(data).content, structuredContent: data };
+}
+
+// 输出 schema(各工具 outputSchema 复用)
+const nodeTypeEnum = z.enum([
+  'SLICE',
+  'FRAME',
+  'GROUP',
+  'COMPONENT_SET',
+  'COMPONENT',
+  'INSTANCE',
+  'BOOLEAN_OPERATION',
+  'VECTOR',
+  'STAR',
+  'LINE',
+  'ELLIPSE',
+  'POLYGON',
+  'RECTANGLE',
+  'TEXT',
+]);
+
+const serializedNodeSchema: z.ZodType<unknown> = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: nodeTypeEnum,
+  x: z.number(),
+  y: z.number(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  fill: z.string().optional(),
+  gradient: z
+    .object({
+      type: z.literal('GRADIENT_LINEAR'),
+      stops: z.array(z.object({ color: z.string(), position: z.number() })),
+    })
+    .optional(),
+  stroke: z.string().optional(),
+  strokeWeight: z.number().optional(),
+  shadow: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      radius: z.number(),
+      color: z.string(),
+    })
+    .optional(),
+  cornerRadius: z.number().optional(),
+  radiusTopLeft: z.number().optional(),
+  radiusTopRight: z.number().optional(),
+  radiusBottomLeft: z.number().optional(),
+  radiusBottomRight: z.number().optional(),
+  pointCount: z.number().optional(),
+  layout: z
+    .object({
+      mode: z.enum(['HORIZONTAL', 'VERTICAL']),
+      itemSpacing: z.number().optional(),
+      padding: z.number().optional(),
+    })
+    .optional(),
+  childCount: z.number().optional(),
+  children: z.array(z.lazy(() => serializedNodeSchema)).optional(),
+  characters: z.string().optional(),
+  fontSize: z.number().optional(),
+  fontFamily: z.string().optional(),
+  fontWeight: z.string().optional(),
+  vectorPaths: z
+    .array(z.object({ data: z.string(), windingRule: z.string() }))
+    .optional(),
+  variantProperties: z.record(z.string(), z.string()).optional(),
+  mainComponentId: z.string().optional(),
+  variantGroupProperties: z.record(z.string(), z.array(z.string())).optional(),
+});
+
+const createdResultSchema = z.object({
+  created: z.union([serializedNodeSchema, z.array(serializedNodeSchema)]),
+});
+const updatedResultSchema = z.object({
+  updated: z.array(serializedNodeSchema),
+});
+const pingResultSchema = z.object({
+  connected: z.boolean(),
+  error: z.string().optional(),
+});
+const getSelectionResultSchema = z.object({
+  selection: z.array(serializedNodeSchema),
+  pageName: z.string(),
+});
+const findResultSchema = z.object({
+  nodes: z.array(serializedNodeSchema),
+  total: z.number(),
+});
+const manageNodesResultSchema = z.object({
+  selected: z.array(z.string()).optional(),
+  removed: z.array(z.string()).optional(),
+  ungrouped: z.array(z.string()).optional(),
+  moved: z.array(serializedNodeSchema).optional(),
+  created: z
+    .union([serializedNodeSchema, z.array(serializedNodeSchema)])
+    .optional(),
+});
+const manageComponentsResultSchema = z.object({
+  created: z
+    .union([serializedNodeSchema, z.array(serializedNodeSchema)])
+    .optional(),
+  swapped: z.array(serializedNodeSchema).optional(),
+  updated: z.array(serializedNodeSchema).optional(),
+});
+const exportResultSchema = z.object({
+  exports: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      format: z.enum(['PNG', 'JPG', 'SVG', 'PDF']),
+      mimeType: z.string(),
+      size: z.number(),
+      path: z.string().optional(),
+      dataUrl: z.string().optional(),
+    }),
+  ),
+});
+const listFontsResultSchema = z.object({
+  families: z.array(z.string()),
+  count: z.number(),
+});
+
 function buildServer(): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
@@ -68,13 +200,16 @@ function buildServer(): McpServer {
 
   server.registerTool(
     'jsd_ping',
-    { description: '检查 jsDesign 插件是否在线(需先启动插件并保持运行)' },
+    {
+      description: '检查 jsDesign 插件是否在线(需先启动插件并保持运行)',
+      outputSchema: pingResultSchema,
+    },
     async () => {
       try {
         await bridge.request('ping', {});
-        return text({ connected: true });
+        return structured({ connected: true });
       } catch (e) {
-        return text({
+        return structured({
           connected: false,
           error: e instanceof Error ? e.message : String(e),
         });
@@ -87,11 +222,12 @@ function buildServer(): McpServer {
     {
       description:
         '获取即时设计画布当前选中的节点信息(名称/类型/尺寸/位置/填充/文本/子树结构)',
+      outputSchema: getSelectionResultSchema,
     },
     async () => {
       try {
         const data = await bridge.request('get_selection', {});
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -106,11 +242,12 @@ function buildServer(): McpServer {
       inputSchema: z.object({
         ops: z.array(z.any()).describe('设计指令节点树'),
       }),
+      outputSchema: createdResultSchema,
     },
     async ({ ops }) => {
       try {
         const data = await bridge.request('execute', { ops });
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -130,6 +267,7 @@ function buildServer(): McpServer {
           ),
         name: z.string().optional().describe('生成的图层名,默认 svg-design'),
       }),
+      outputSchema: createdResultSchema,
     },
     async ({ svg, name }) => {
       try {
@@ -137,7 +275,7 @@ function buildServer(): McpServer {
           svg,
           name: name ?? 'svg-design',
         });
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -153,6 +291,7 @@ function buildServer(): McpServer {
         html: z.string().describe('HTML 片段,支持内联 style'),
         name: z.string().optional().describe('生成的图层名,默认 html-design'),
       }),
+      outputSchema: createdResultSchema,
     },
     async ({ html, name }) => {
       try {
@@ -161,7 +300,7 @@ function buildServer(): McpServer {
           svg,
           name: name ?? 'html-design',
         });
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -241,6 +380,7 @@ function buildServer(): McpServer {
           })
           .describe('要修改的属性'),
       }),
+      outputSchema: updatedResultSchema,
     },
     async ({ ids, matchName, recursive, props }) => {
       try {
@@ -250,7 +390,7 @@ function buildServer(): McpServer {
           recursive,
           props,
         });
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -274,11 +414,12 @@ function buildServer(): McpServer {
       description:
         '在当前页面查找节点,可按名称/类型过滤,返回序列化节点列表(最多 100 条)',
       inputSchema: findSchema,
+      outputSchema: findResultSchema,
     },
     async (params) => {
       try {
         const data = await bridge.request('find', params);
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -336,11 +477,12 @@ function buildServer(): McpServer {
           index: z.number().optional().describe('插入位置,缺省追加到末尾'),
         }),
       ]),
+      outputSchema: manageNodesResultSchema,
     },
     async (params) => {
       try {
         const data = await bridge.request('node_op', params);
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -393,11 +535,12 @@ function buildServer(): McpServer {
           name: z.string().optional().describe('组件集名'),
         }),
       ]),
+      outputSchema: manageComponentsResultSchema,
     },
     async (params) => {
       try {
         const data = await bridge.request('component_op', params);
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -425,6 +568,7 @@ function buildServer(): McpServer {
           .optional()
           .describe('是否同时返回 base64 dataURL,默认 false'),
       }),
+      outputSchema: exportResultSchema,
     },
     async ({ ids, format, scale, savePath, includeDataUrl }) => {
       try {
@@ -457,7 +601,7 @@ function buildServer(): McpServer {
           }
           results.push(out);
         }
-        return text({ exports: results });
+        return structured({ exports: results });
       } catch (e) {
         return err(e);
       }
@@ -475,6 +619,7 @@ function buildServer(): McpServer {
           .string()
           .describe('本地图片文件绝对路径,如 /tmp/poster.png'),
       }),
+      outputSchema: updatedResultSchema,
     },
     async ({ ids, sourcePath }) => {
       try {
@@ -492,7 +637,7 @@ function buildServer(): McpServer {
           ids,
           bytes: new Uint8Array(bytes),
         });
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -501,11 +646,14 @@ function buildServer(): McpServer {
 
   server.registerTool(
     'jsd_list_fonts',
-    { description: '列出当前环境可用字体族' },
+    {
+      description: '列出当前环境可用字体族',
+      outputSchema: listFontsResultSchema,
+    },
     async () => {
       try {
         const data = await bridge.request('list_fonts', {});
-        return text(data);
+        return structured(data);
       } catch (e) {
         return err(e);
       }
@@ -590,7 +738,11 @@ async function serveProxy(client: Client): Promise<void> {
     );
     const register = server.registerTool.bind(server) as unknown as (
       name: string,
-      config: { description?: string; inputSchema?: unknown },
+      config: {
+        description?: string;
+        inputSchema?: unknown;
+        outputSchema?: unknown;
+      },
       cb: (args: Record<string, unknown>) => Promise<unknown>,
     ) => unknown;
     for (const t of tools) {
@@ -599,11 +751,24 @@ async function serveProxy(client: Client): Promise<void> {
         {
           description: t.description,
           inputSchema: fromJsonSchema(t.inputSchema as never),
+          ...(t.outputSchema
+            ? { outputSchema: fromJsonSchema(t.outputSchema as never) }
+            : {}),
         },
         async (args) => {
-          const res = await client.callTool({ name: t.name, arguments: args });
+          const res = (await client.callTool({
+            name: t.name,
+            arguments: args,
+          })) as {
+            content: unknown;
+            structuredContent?: unknown;
+            isError?: boolean;
+          };
           return {
             content: res.content,
+            ...(res.structuredContent !== undefined
+              ? { structuredContent: res.structuredContent }
+              : {}),
             ...(res.isError ? { isError: true } : {}),
           };
         },

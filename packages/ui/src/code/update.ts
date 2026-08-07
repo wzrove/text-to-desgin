@@ -1,4 +1,7 @@
-import type { UpdateSelectionProps } from 'text-to-design-shared';
+import type {
+  SerializedNode,
+  UpdateSelectionProps,
+} from 'text-to-design-shared';
 import { paint } from './color';
 import { serializeNode } from './serialize';
 import { makeShadowEffect } from './style';
@@ -110,7 +113,7 @@ export async function updateSelection(params: {
   matchName?: string;
   recursive?: boolean;
   props: UpdateSelectionProps;
-}): Promise<Record<string, unknown>> {
+}): Promise<{ updated: SerializedNode[] }> {
   const props = params.props ?? {};
   let base: readonly SceneNode[];
   if (params.ids != null && params.ids.length > 0) {

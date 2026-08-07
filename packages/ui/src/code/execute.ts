@@ -1,10 +1,11 @@
+import type { SerializedNode } from 'text-to-design-shared';
 import buildNode from './buildNode';
 import { serializeNode } from './serialize';
 import { toSpecs } from './types';
 
 export async function executeOps(
   ops: unknown,
-): Promise<Record<string, unknown>> {
+): Promise<{ created: SerializedNode[] }> {
   const specs = toSpecs(ops);
   const page = jsDesign.currentPage;
   const center = jsDesign.viewport.center;
@@ -35,7 +36,7 @@ export async function executeOps(
 export function createSvgNode(
   svg: string,
   name?: string,
-): Record<string, unknown> {
+): { created: SerializedNode } {
   if (typeof svg !== 'string' || svg.trim() === '') {
     throw new Error('无效的 svg: 必须是非空字符串');
   }

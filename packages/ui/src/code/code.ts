@@ -1,4 +1,8 @@
-import type { GetSelectionParams, PluginRequest } from 'text-to-design-shared';
+import type {
+  GetSelectionParams,
+  GetSelectionResult,
+  PluginRequest,
+} from 'text-to-design-shared';
 import { makeResponse } from 'text-to-design-shared';
 import {
   cloneNodes,
@@ -52,9 +56,7 @@ function fail(id: string, method: string, e: unknown): void {
   send(id, false, undefined, `${method} 失败: ${reason}`);
 }
 
-function getSelection(
-  params: GetSelectionParams = {},
-): Record<string, unknown> {
+function getSelection(params: GetSelectionParams = {}): GetSelectionResult {
   const selection = jsDesign.currentPage.selection;
   const depth = params.depth ?? 2;
   return {

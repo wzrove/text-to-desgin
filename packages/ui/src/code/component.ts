@@ -1,10 +1,11 @@
+import type { SerializedNode } from 'text-to-design-shared';
 import { serializeNode } from './serialize';
 import { findNode } from './utils';
 
 export function createComponentNodes(params: {
   ids: string[];
   name?: string;
-}): Record<string, unknown> {
+}): { created: SerializedNode } {
   const nodes = findNode(params.ids);
   if (nodes.length === 0) {
     throw new Error('没有找到要固化为组件的节点');
@@ -18,7 +19,7 @@ export function createComponentNodes(params: {
   return { created: serializeNode(component) };
 }
 
-export function createInstances(ids: string[]): Record<string, unknown> {
+export function createInstances(ids: string[]): { created: SerializedNode[] } {
   const nodes = findNode(ids);
   const components = nodes.filter((n) => n.type === 'COMPONENT');
   if (components.length === 0) {
@@ -41,7 +42,7 @@ export function createInstances(ids: string[]): Record<string, unknown> {
 export function swapComponents(params: {
   ids: string[];
   componentId: string;
-}): Record<string, unknown> {
+}): { swapped: SerializedNode[] } {
   const component = findNode([params.componentId]).find(
     (n) => n.type === 'COMPONENT',
   ) as ComponentNode | undefined;
@@ -63,7 +64,7 @@ export function swapComponents(params: {
 export function setInstanceProperties(params: {
   ids: string[];
   properties: Record<string, string>;
-}): Record<string, unknown> {
+}): { updated: SerializedNode[] } {
   const instances = findNode(params.ids).filter(
     (n) => n.type === 'INSTANCE',
   ) as InstanceNode[];
@@ -79,7 +80,7 @@ export function setInstanceProperties(params: {
 export async function importComponentNodes(params: {
   key: string;
   name?: string;
-}): Promise<Record<string, unknown>> {
+}): Promise<{ created: SerializedNode }> {
   const component = await jsDesign.importComponentByKeyAsync(params.key);
   const page = jsDesign.currentPage;
   page.appendChild(component);
@@ -94,7 +95,7 @@ export async function importComponentNodes(params: {
 export function combineAsVariantsNodes(params: {
   ids: string[];
   name?: string;
-}): Record<string, unknown> {
+}): { created: SerializedNode } {
   const components = findNode(params.ids).filter(
     (n) => n.type === 'COMPONENT',
   ) as ComponentNode[];
@@ -107,7 +108,9 @@ export function combineAsVariantsNodes(params: {
   return { created: serializeNode(set) };
 }
 
-export function detachInstanceNodes(ids: string[]): Record<string, unknown> {
+export function detachInstanceNodes(ids: string[]): {
+  created: SerializedNode[];
+} {
   const instances = findNode(ids).filter(
     (n) => n.type === 'INSTANCE',
   ) as InstanceNode[];
